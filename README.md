@@ -1,30 +1,44 @@
 # Base Affiliate Partner Program 2026
 
-Trang giới thiệu chương trình và form đăng ký Partner của Base.vn, kèm hệ thống quản lý partner/lead trên Google Sheets.
+Website chương trình Partner của Base.vn + Partner Portal, backend chạy trên Google Sheets + Apps Script.
+
+- Trang giới thiệu & đăng ký: https://zang254.github.io/Base-partner-2026/
+- Partner Portal (đăng nhập): https://zang254.github.io/Base-partner-2026/portal.html
 
 ## Cấu trúc
 
 | File | Dùng để |
 |---|---|
-| `index.html` | Trang web chạy trên GitHub Pages |
-| `unbounce/unbounce-partner.html` | Code dán vào khối Custom HTML trên Unbounce |
-| `apps-script/Code.gs` | Apps Script gắn với Google Sheet "Base Partner": nhận đăng ký, gửi email, xử lý lead |
+| `index.html` | Trang giới thiệu, chính sách, form đăng ký Partner, nút Đăng nhập |
+| `portal.html` | Partner Portal: Deal của tôi, Đăng ký lead, Tài nguyên, Thông tin của tôi |
+| `apps-script/Code.gs` | Backend: tài khoản, API cho Portal, đồng bộ Base Workflow, webhook Base CRM, email tự động |
+| `unbounce/unbounce-partner.html` | Bản trang giới thiệu để dán vào Custom HTML của Unbounce |
 
 ## Luồng hoạt động
 
-1. Partner đăng ký trên trang (GitHub Pages hoặc Unbounce) → dữ liệu vào tab **Partner** của Google Sheet, gửi email xác nhận.
-2. Admin chọn **Đã duyệt** → hệ thống cấp mã partner, gửi email kèm link Partner Portal (Google Sites).
-3. Partner gửi lead qua Google Form → tab **Lead**, cảnh báo trùng, email xác nhận.
-4. Admin cập nhật **Kiểm tra lead / Giai đoạn** → email tự động cho partner theo từng bước.
-5. Partner xem deal của mình trên Looker Studio (lọc theo email).
+1. Đăng ký Partner trên website → tab **Partner** (Chờ duyệt) + email xác nhận.
+2. Admin chọn **Đã duyệt** → sinh **Mã partner** + **tài khoản** (email + mật khẩu tạm thời) gửi qua email.
+3. Partner đăng nhập Portal → bắt buộc đổi mật khẩu lần đầu → bổ sung thông tin Bên B.
+4. Partner **đăng ký lead** → tab **Lead** + tạo nhiệm vụ trên **Base Workflow** (API).
+5. Mỗi 10 phút hệ thống đọc Workflow: khi có *Tình trạng lead*, *% hoa hồng partner*, *BC/CD phụ trách* → email cho partner.
+6. Mỗi lần BC chuyển stage trên **Base CRM** → Base Process gọi webhook → cập nhật **Deal của tôi** + email partner.
+7. Partner chỉ thấy dữ liệu gắn với email của mình (kiểm tra ở backend theo phiên đăng nhập).
 
-## Cập nhật trang
+## Thuộc tính tập lệnh (Apps Script > Cài đặt dự án)
 
-Sửa `index.html` → vào repo bấm **Add file → Upload files** → kéo file mới vào (trùng tên sẽ ghi đè) → **Commit changes**. GitHub Pages tự cập nhật sau khoảng 1 phút.
+| Tên | Giá trị |
+|---|---|
+| `BASE_WF_TOKEN` | Access token v2 của Base Workflow |
+| `WF_ID` | ID workflow "MKT \| Đăng ký lead - Partner" |
+| `WF_CREATOR` | Username tạo nhiệm vụ |
+| `WEBHOOK_SECRET` | Chuỗi bí mật cho webhook CRM |
 
-## Lưu ý bảo mật
+Webhook CRM (GET hoặc POST tới link Web App):
+`?action=crm&secret=WEBHOOK_SECRET&lead=MÃ_LEAD&stage=MQL` (hoặc `deal=TÊN_DEAL`, `crm=LINK_DEAL`; tùy chọn `value=`, `note=`)
 
-- Không đưa access token Base hay mật khẩu vào repo. Token được lưu trong **Script Properties** của Apps Script.
-- Link Web App (`SCRIPT_URL`) trong trang là công khai theo thiết kế, chỉ dùng để nhận form.
+## Bảo mật
+
+- Không đưa token, mật khẩu vào repo. Mật khẩu partner được băm (SHA-256 + salt), cột mật khẩu bị ẩn trong Sheet.
+- Thông tin CMND/CCCD, tài khoản ngân hàng chỉ lưu trong Google Sheet, giới hạn quyền xem Sheet cho đội phụ trách.
 
 Liên hệ: Hoàng Hương Giang – Phát triển Đối tác Base.vn – 0943 860 401 – giang.hoang03@base.vn

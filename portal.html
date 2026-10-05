@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Partner Portal | Base Affiliate Partner 2026</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14213D;--muted:#56607A;--line:#D6E2F7;--paper:#F2F7FF;--blue:#1F62E8;--blue-2:#4C8DF5;--navy:#0E1630;
+  --ok:#047857;--ok-bg:#E6F6EE;--warn:#92400E;--warn-bg:#FEF3C7;--bad:#B42318;--bad-bg:#FDECEA;
+  --g-base:linear-gradient(90deg,#4C8DF5 0%,#1F62E8 100%);
+  --g-night:radial-gradient(90% 120% at 50% 0%,#1F62E8 0%,#0E1630 55%,#0A0F1E 100%);
+  --g-aurora:radial-gradient(120% 140% at 75% 0%,#7BAEF8 0%,#1F62E8 45%,#0A3AA8 100%)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:var(--paper);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit}
+.hidden{display:none!important}
+:focus-visible{outline:3px solid #7EA2FF;outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 22px;border:0;border-radius:999px;background:var(--g-base);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -10px rgba(31,98,232,.7);transition:filter .2s}
+.btn:hover{filter:brightness(1.07)}
+.btn[disabled]{opacity:.65;cursor:progress}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{background:#fff}
+.btn.sm{min-height:38px;padding:6px 16px;font-size:14px}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.msg{border-radius:10px;padding:11px 14px;font-size:14.5px;margin-bottom:14px}
+.msg.err{background:var(--bad-bg);color:var(--bad)}
+.msg.ok{background:var(--ok-bg);color:var(--ok)}
+label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.req{color:#F87171}
+.opt{font-weight:400;color:var(--muted)}
+.inp{width:100%;min-height:46px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+textarea.inp{min-height:96px;resize:vertical}
+
+/* LOGIN */
+.auth{min-height:100vh;background:var(--g-night);display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.auth-card{width:100%;max-width:420px;background:#fff;border-radius:20px;padding:32px;box-shadow:0 30px 70px -25px rgba(0,0,0,.6)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em}
+.brand img{width:30px;height:auto}
+.brand span{font-weight:500;color:var(--muted);letter-spacing:0}
+.auth-card h1{font-size:26px;letter-spacing:-.02em;margin:26px 0 6px}
+.auth-card .sub{color:var(--muted);margin-bottom:22px}
+.auth-card .field{margin-bottom:14px}
+.pw{position:relative}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);cursor:pointer;padding:8px;font-size:13px}
+.auth-links{display:flex;justify-content:space-between;align-items:center;margin:4px 0 20px;font-size:14px}
+.auth-links a{text-decoration:none;font-weight:600}
+.auth-foot{margin-top:22px;text-align:center;font-size:14px;color:var(--muted)}
+.auth-foot a{font-weight:700;text-decoration:none}
+
+/* APP */
+.top{background:var(--g-night);color:#fff}
+.top-in{max-width:1180px;margin:0 auto;padding:16px 20px 0}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.top .brand span{color:#A9C4F5}
+.who{display:flex;align-items:center;gap:14px;font-size:14px}
+.who b{display:block;font-size:15px}
+.who small{color:#A9C4F5}
+.who .btn.ghost{color:#fff;border-color:rgba(255,255,255,.3)}
+.who .btn.ghost:hover{background:rgba(255,255,255,.08)}
+@media(max-width:640px){.who .nm{display:none}.top .brand span{display:none}}
+.btn{white-space:nowrap}
+.tabs{display:flex;gap:4px;margin-top:22px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;background:none;border:0;color:#C9DAF8;padding:12px 18px;border-radius:12px 12px 0 0;cursor:pointer;font-weight:600;white-space:nowrap}
+.tab:hover{color:#fff}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--ink)}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+.panel h2{font-size:24px;letter-spacing:-.02em;margin-bottom:4px}
+.panel .lead-in{color:var(--muted);margin-bottom:22px}
+.head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.head-row .lead-in{margin:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px}
+
+/* DEAL */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}}
+.stat{padding:18px 20px}
+.stat span{display:block;color:var(--muted);font-size:13.5px}
+.stat b{display:block;font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.stat.hl b{background:var(--g-base);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;font-size:13px;font-weight:600;color:var(--muted);padding:14px 16px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFCFF}
+td{padding:14px 16px;border-bottom:1px solid #EEF3FB;vertical-align:top}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:#F7FAFF}
+td .co{font-weight:600}
+td small{display:block;color:var(--muted);font-size:12.5px}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.b-wait{background:var(--warn-bg);color:var(--warn)}
+.b-bad{background:var(--bad-bg);color:var(--bad)}
+.b-stage{background:#E8F0FF;color:var(--blue)}
+.b-won{background:var(--ok-bg);color:var(--ok)}
+.b-lost{background:#EEF1F6;color:#56607A}
+tr.detail td{background:#F7FAFF;padding:18px 16px}
+.dl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px;margin-bottom:14px}
+@media(max-width:760px){.dl{grid-template-columns:1fr}}
+.dl span{display:block;font-size:12.5px;color:var(--muted)}
+.pipe{display:flex;overflow-x:auto;gap:3px}
+.pipe i{font-style:normal;flex:1 0 96px;height:32px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#8A93AE;background:#E4E8F1;
+  clip-path:polygon(0 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,0 100%,9px 50%);white-space:nowrap;padding:0 12px}
+.pipe i:first-child{clip-path:polygon(0 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,0 100%);border-radius:16px 0 0 16px}
+.pipe i.on{background:#5DBB78;color:#fff}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
+/* mobile deal cards */
+@media(max-width:700px){
+  .tbl table thead{display:none}
+  .tbl table,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tr.row{padding:14px 16px;border-bottom:1px solid #EEF3FB}
+  .tbl tr.row td{border:0;padding:3px 0}
+  .tbl td[data-l]::before{content:attr(data-l);display:inline-block;min-width:104px;color:var(--muted);font-size:12.5px}
+}
+
+/* LEAD FORM (dark) */
+.lead-wrap{background:var(--g-night);border-radius:24px;padding:36px;color:#fff}
+@media(max-width:560px){.lead-wrap{padding:22px}}
+.lead-wrap h2{color:#fff}
+.lead-wrap .lead-in{color:#A9C4F5}
+.lf{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+@media(max-width:640px){.lf{grid-template-columns:1fr}}
+.lf .full{grid-column:1/-1}
+.lf label{color:#E3EAFB;font-weight:500;font-size:15px}
+.lf .inp{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:12px 20px;min-height:52px}
+.lf textarea.inp{border-radius:22px}
+.lf .inp::placeholder{color:#8E9BB8}
+.lf select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23A9C4F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;padding-right:44px;cursor:pointer}
+.lf select.inp option{color:#14213D}
+.lf select.inp:invalid{color:#8E9BB8}
+.lf .inp:focus{outline:none;border-color:#7BAEF8;box-shadow:0 0 0 3px rgba(123,174,248,.25)}
+.lf [aria-invalid="true"]{border-color:#F87171}
+.lf .err{color:#FCA5A5;font-size:13px;margin-top:5px}
+.lf-act{text-align:center;margin-top:10px}
+.lf-act .btn{min-width:240px;min-height:54px;font-size:16px;box-shadow:0 10px 30px -8px rgba(76,141,245,.8)}
+.done{text-align:center;padding:30px 10px}
+.done .tick{width:62px;height:62px;border-radius:50%;background:rgba(110,231,183,.15);color:#6EE7B7;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.done h3{font-size:22px;margin-bottom:6px}
+.done p{color:#C9DAF8;max-width:46ch;margin:0 auto 18px}
+
+/* RESOURCES */
+.res-group{margin-bottom:26px}
+.res-group h3{font-size:14px;text-transform:none;color:var(--muted);font-weight:600;margin-bottom:10px}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.res-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.res-grid{grid-template-columns:1fr}}
+.res{padding:20px;display:flex;flex-direction:column;gap:6px}
+.res b{font-size:16px}
+.res p{color:var(--muted);font-size:14px;flex:1}
+.res a{margin-top:8px;font-weight:700;text-decoration:none;align-self:flex-start}
+.res .soon{margin-top:8px;font-size:13px;color:var(--muted)}
+
+/* PROFILE */
+.prof{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media(max-width:900px){.prof{grid-template-columns:1fr}}
+.idcard{background:var(--g-aurora);color:#fff;border-radius:18px;padding:24px}
+.idcard small{color:#DCE8FF}
+.idcard .code{font-size:30px;font-weight:800;letter-spacing:.02em;margin:4px 0 16px}
+.idcard dl{margin:0;display:grid;gap:10px}
+.idcard dt{font-size:12.5px;color:#DCE8FF}
+.idcard dd{margin:0;font-weight:600;word-break:break-word}
+.pf{padding:24px}
+.pf h3{font-size:17px;margin-bottom:4px}
+.pf .note{color:var(--muted);font-size:14px;margin-bottom:18px}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+@media(max-width:640px){.pf-grid{grid-template-columns:1fr}}
+.pf-grid .full{grid-column:1/-1}
+.pf-act{display:flex;align-items:center;gap:14px;margin-top:20px;flex-wrap:wrap}
+.pf-act small{color:var(--muted)}
+.sec{margin-top:20px}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(10,15,30,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal .auth-card h1{margin-top:0}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ DANG NHAP ============ -->
+<section class="auth" id="v-login">
+  <div class="auth-card">
+    <div class="brand"><img src="" alt="" class="logo-img">BASE.VN <span>Partner Portal</span></div>
+    <div id="loginBox">
+      <h1>Đăng nhập</h1>
+      <p class="sub">Dành cho Partner đã được duyệt. Tài khoản được gửi qua email khi hồ sơ được phê duyệt.</p>
+      <div id="loginMsg"></div>
+      <form id="loginForm" novalidate>
+        <div class="field"><label for="lgEmail">Email</label><input class="inp" id="lgEmail" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="lgPw">Mật khẩu</label>
+          <div class="pw"><input class="inp" id="lgPw" type="password" autocomplete="current-password" required><button type="button" data-toggle="lgPw">Hiện</button></div></div>
+        <div class="auth-links"><span></span><a href="#" id="toForgot">Quên mật khẩu?</a></div>
+        <button class="btn" style="width:100%" id="lgBtn" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+    <div id="forgotBox" class="hidden">
+      <h1>Quên mật khẩu</h1>
+      <p class="sub">Nhập email đăng ký Partner, Base sẽ gửi mật khẩu tạm thời mới qua email.</p>
+      <div id="fgMsg"></div>
+      <form id="fgForm" novalidate>
+        <div class="field"><label for="fgEmail">Email</label><input class="inp" id="fgEmail" type="email" required></div>
+        <button class="btn" style="width:100%" id="fgBtn" type="submit">Gửi mật khẩu mới</button>
+      </form>
+      <div class="auth-links" style="margin-top:16px"><a href="#" id="toLogin">← Quay lại đăng nhập</a><span></span></div>
+    </div>
+    <p class="auth-foot">Chưa là Partner? <a href="./#bp-dang-ky">Đăng ký làm Partner</a></p>
+  </div>
+</section>
+
+<!-- ============ PORTAL ============ -->
+<div id="v-app" class="hidden">
+  <header class="top">
+    <div class="top-in">
+      <div class="top-row">
+        <div class="brand"><img src="" alt="" class="logo-img">BASE.VN <span>Partner Portal</span></div>
+        <div class="who"><div class="nm"><b id="whoName"></b><small id="whoCode"></small></div><button class="btn ghost sm" id="logoutBtn">Đăng xuất</button></div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="deals" aria-selected="true">Deal của tôi</button>
+        <button class="tab" role="tab" data-tab="lead" aria-selected="false">Đăng ký lead</button>
+        <button class="tab" role="tab" data-tab="res" aria-selected="false">Tài nguyên</button>
+        <button class="tab" role="tab" data-tab="me" aria-selected="false">Thông tin của tôi</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- DEAL -->
+    <section class="panel" id="p-deals">
+      <div class="head-row"><div><h2>Deal của tôi</h2><p class="lead-in">Theo dõi trạng thái từng khách hàng bạn đã giới thiệu. Bấm vào một dòng để xem chi tiết.</p></div>
+        <button class="btn ghost sm" id="reloadDeals">Làm mới</button></div>
+      <div class="stats">
+        <div class="card stat"><span>Tổng lead</span><b id="sTotal">–</b></div>
+        <div class="card stat"><span>Lead hợp lệ</span><b id="sValid">–</b></div>
+        <div class="card stat"><span>Đang xử lý</span><b id="sOpen">–</b></div>
+        <div class="card stat hl"><span>Deal thành công</span><b id="sWon">–</b></div>
+      </div>
+      <div class="card tbl" id="dealBox"></div>
+    </section>
+
+    <!-- LEAD -->
+    <section class="panel hidden" id="p-lead">
+      <div class="lead-wrap">
+        <div id="leadFormBox">
+          <h2>Đăng ký lead</h2>
+          <p class="lead-in">Thông tin khách hàng bạn muốn giới thiệu. Base sẽ kiểm tra và báo kết quả trong 24–48 giờ làm việc.</p>
+          <div id="leadMsg"></div>
+          <form class="lf" id="leadForm" novalidate>
+            <div class="full"><label for="l1">Họ và tên <span class="req">*</span></label><input class="inp" id="l1" name="Họ và tên" placeholder="Nhập tên người liên hệ" required></div>
+            <div class="full"><label for="l2">Sản phẩm khách quan tâm <span class="req">*</span></label>
+              <select class="inp" id="l2" name="Sản phẩm quan tâm" required><option value="">Lựa chọn sản phẩm</option><option>Base Work</option><option>Base CRM</option><option>Base HRM</option><option>AI &amp; Agents</option><option>Trọn bộ nền tảng Base</option><option>Chưa xác định</option></select></div>
+            <div><label for="l3">Email <span class="req">*</span></label><input class="inp" id="l3" name="Email" type="email" placeholder="Nhập email khách hàng" required></div>
+            <div><label for="l4">Số điện thoại <span class="req">*</span></label><input class="inp" id="l4" name="Số điện thoại" type="tel" inputmode="tel" pattern="[0-9+\s.\-()]{8,15}" placeholder="Nhập số điện thoại khách hàng" required></div>
+            <div><label for="l5">Vị trí công việc <span class="req">*</span></label>
+              <select class="inp" id="l5" name="Vị trí công việc" required><option value="">Lựa chọn vị trí công việc</option><option>Chủ doanh nghiệp / CEO</option><option>Quản lý cấp cao (C-level)</option><option>Trưởng phòng / Quản lý</option><option>Chuyên viên / Nhân viên</option><option>Khác</option></select></div>
+            <div><label for="l6">Tên công ty <span class="req">*</span></label><input class="inp" id="l6" name="Tên công ty" placeholder="Nhập tên công ty khách hàng" required></div>
+            <div><label for="l7">Tỉnh/Thành phố <span class="req">*</span></label>
+              <select class="inp" id="l7" name="Tỉnh/Thành phố" required><option value="">Lựa chọn khu vực</option><option>Khu vực miền Bắc - VN</option><option>Khu vực miền Trung - VN</option><option>Khu vực miền Nam - VN</option></select></div>
+            <div><label for="l8">Quy mô nhân sự <span class="req">*</span></label>
+              <select class="inp" id="l8" name="Quy mô nhân sự" required><option value="">Lựa chọn quy mô</option><option>1–15 nhân sự</option><option>16–30 nhân sự</option><option>31–60 nhân sự</option><option>61–200 nhân sự</option><option>201–500 nhân sự</option><option>Trên 500 nhân sự</option></select></div>
+            <div class="full"><label for="l9">Nhu cầu / ghi chú <span class="opt">(không bắt buộc)</span></label><textarea class="inp" id="l9" name="Ghi chú" placeholder="Khách đang gặp vấn đề gì, đã dùng phần mềm nào..."></textarea></div>
+            <div class="full lf-act"><button class="btn" id="leadBtn" type="submit">Gửi lead cho Base</button></div>
+          </form>
+        </div>
+        <div id="leadDone" class="done hidden">
+          <div class="tick"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <h3>Đã gửi lead <span id="leadCode"></span></h3>
+          <p>Base sẽ kiểm tra và gửi email kết quả cho bạn, kèm người phụ trách và mức hoa hồng nếu lead hợp lệ.</p>
+          <button class="btn" id="leadAgain">Gửi thêm lead</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAI NGUYEN -->
+    <section class="panel hidden" id="p-res">
+      <h2>Tài nguyên</h2>
+      <p class="lead-in">Chính sách, hồ sơ năng lực và tài liệu sản phẩm để bạn tư vấn khách hàng.</p>
+      <div id="resBox"></div>
+    </section>
+
+    <!-- THONG TIN -->
+    <section class="panel hidden" id="p-me">
+      <h2>Thông tin của tôi</h2>
+      <p class="lead-in">Bổ sung thông tin cá nhân và tài khoản ngân hàng để Base lập hợp đồng và chi trả hoa hồng.</p>
+      <div class="prof">
+        <div class="idcard">
+          <small>Mã Partner</small>
+          <div class="code" id="mCode">–</div>
+          <dl>
+            <div><dt>Họ và tên</dt><dd id="mName"></dd></div>
+            <div><dt>Email</dt><dd id="mEmail"></dd></div>
+            <div><dt>Công ty</dt><dd id="mCompany"></dd></div>
+            <div><dt>Cập nhật hồ sơ</dt><dd id="mUpdated">Chưa cập nhật</dd></div>
+          </dl>
+        </div>
+        <div>
+          <div class="card pf">
+            <h3>Thông tin Bên liên kết (Bên B)</h3>
+            <p class="note">Dùng để lập hợp đồng liên kết và chi trả hoa hồng. Thông tin chỉ đội ngũ Phát triển Đối tác của Base xem được.</p>
+            <div id="pfMsg"></div>
+            <form id="pfForm" novalidate>
+              <div class="pf-grid">
+                <div><label for="f1">Ngày sinh</label><input class="inp" id="f1" name="Ngày sinh" type="date"></div>
+                <div><label for="f2">Số điện thoại</label><input class="inp" id="f2" name="Số điện thoại" type="tel"></div>
+                <div class="full"><label for="f3">Địa chỉ thường trú</label><input class="inp" id="f3" name="Địa chỉ thường trú"></div>
+                <div class="full"><label for="f4">Địa chỉ tạm trú</label><input class="inp" id="f4" name="Địa chỉ tạm trú"></div>
+                <div><label for="f5">Số CMND/CCCD</label><input class="inp" id="f5" name="Số CMND/CCCD" inputmode="numeric"></div>
+                <div><label for="f6">MST cá nhân</label><input class="inp" id="f6" name="MST cá nhân" inputmode="numeric"></div>
+                <div><label for="f7">Số tài khoản</label><input class="inp" id="f7" name="Số tài khoản" inputmode="numeric"></div>
+                <div><label for="f8">Ngân hàng</label><input class="inp" id="f8" name="Ngân hàng" placeholder="VD: Vietcombank - CN Hà Nội"></div>
+                <div class="full"><label for="f9">Chủ tài khoản</label><input class="inp" id="f9" name="Chủ tài khoản" placeholder="Viết hoa không dấu, VD: NGUYEN VAN A"></div>
+              </div>
+              <div class="pf-act"><button class="btn" id="pfBtn" type="submit">Lưu thông tin</button><small id="pfSaved"></small></div>
+            </form>
+          </div>
+          <div class="card pf sec">
+            <h3>Đổi mật khẩu</h3>
+            <p class="note">Mật khẩu mới cần ít nhất 8 ký tự.</p>
+            <div id="cpMsg"></div>
+            <form id="cpForm" class="pf-grid" novalidate>
+              <div class="full"><label for="c1">Mật khẩu hiện tại</label><input class="inp" id="c1" type="password" autocomplete="current-password"></div>
+              <div><label for="c2">Mật khẩu mới</label><input class="inp" id="c2" type="password" autocomplete="new-password"></div>
+              <div><label for="c3">Nhập lại mật khẩu mới</label><input class="inp" id="c3" type="password" autocomplete="new-password"></div>
+              <div class="full"><button class="btn ghost" id="cpBtn" type="submit">Đổi mật khẩu</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ BAT BUOC DOI MAT KHAU ============ -->
+<div class="modal hidden" id="forceModal" role="dialog" aria-modal="true" aria-labelledby="fmTitle">
+  <div class="auth-card">
+    <h1 id="fmTitle">Đặt mật khẩu mới</h1>
+    <p class="sub">Đây là lần đăng nhập đầu tiên với mật khẩu tạm thời. Vui lòng đặt mật khẩu riêng của bạn (ít nhất 8 ký tự).</p>
+    <div id="fmMsg"></div>
+    <form id="fmForm" novalidate>
+      <div class="field"><label for="fm1">Mật khẩu mới</label><input class="inp" id="fm1" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="fm2">Nhập lại mật khẩu mới</label><input class="inp" id="fm2" type="password" autocomplete="new-password"></div>
+      <button class="btn" style="width:100%" id="fmBtn" type="submit">Lưu mật khẩu</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTSmXhwm00kae-rBuHJvg6EOeo7d3Ph9wtzmxkNRNH3p1s3Ht8e2R9ciH5vyno_cZW/exec";
+  var LOGO = "data:image/png;base64,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";
+  var STAGES = ['LEAD - OUTREACH','FIRST TOUCH','MQL','MEETING BOOKED','SAL','SHOWCASE','NEGOTIATION','PAYMENT'];
+
+  var $ = function(id){ return document.getElementById(id); };
+  document.querySelectorAll('.logo-img').forEach(function(i){ i.src = LOGO; });
+  var store = { get:function(k){ try{return localStorage.getItem(k);}catch(e){return null;} }, set:function(k,v){ try{localStorage.setItem(k,v);}catch(e){} }, del:function(k){ try{localStorage.removeItem(k);}catch(e){} } };
+  var state = { token: store.get('bp_token'), tempPw: '' };
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function msg(id, text, type){ $(id).innerHTML = text ? '<div class="msg '+(type||'err')+'" role="alert">'+esc(text)+'</div>' : ''; }
+  function busy(btn, on, label){ if (on){ btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>'+(label||'Đang xử lý...'); } else { btn.disabled = false; if (btn.dataset.l) btn.innerHTML = btn.dataset.l; } }
+
+  function api(action, data){
+    var body = Object.assign({ action: action, token: state.token }, data || {});
+    return fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if (res && res.auth === false){ logout(true); throw new Error(res.error); } return res; })
+      .catch(function(e){ if (e && e.message && e.message.indexOf('Phiên') === 0) throw e; throw new Error('Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.'); });
+  }
+
+  /* ---------- Hien/an mat khau ---------- */
+  document.querySelectorAll('[data-toggle]').forEach(function(b){
+    b.addEventListener('click', function(){ var i = $(b.dataset.toggle); var s = i.type === 'password'; i.type = s ? 'text' : 'password'; b.textContent = s ? 'Ẩn' : 'Hiện'; });
+  });
+
+  /* ---------- Dang nhap ---------- */
+  $('toForgot').onclick = function(e){ e.preventDefault(); $('loginBox').classList.add('hidden'); $('forgotBox').classList.remove('hidden'); $('fgEmail').value = $('lgEmail').value; $('fgEmail').focus(); };
+  $('toLogin').onclick = function(e){ e.preventDefault(); $('forgotBox').classList.add('hidden'); $('loginBox').classList.remove('hidden'); };
+
+  $('loginForm').addEventListener('submit', function(e){
+    e.preventDefault(); msg('loginMsg');
+    var email = $('lgEmail').value.trim(), pw = $('lgPw').value;
+    if (!email || !pw) return msg('loginMsg', 'Vui lòng nhập email và mật khẩu.');
+    var btn = $('lgBtn'); busy(btn, true, 'Đang đăng nhập...');
+    api('login', { email: email, password: pw }).then(function(r){
+      busy(btn, false);
+      if (!r.ok) return msg('loginMsg', r.error || 'Đăng nhập không thành công.');
+      state.token = r.token; store.set('bp_token', r.token); state.tempPw = pw; $('lgPw').value = '';
+      enterApp(r.profile, r.mustChange);
+    }).catch(function(err){ busy(btn, false); msg('loginMsg', err.message); });
+  });
+
+  $('fgForm').addEventListener('submit', function(e){
+    e.preventDefault(); var email = $('fgEmail').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return msg('fgMsg', 'Vui lòng nhập email hợp lệ.');
+    var btn = $('fgBtn'); busy(btn, true);
+    api('forgot', { email: email }).then(function(){ busy(btn, false); msg('fgMsg', 'Nếu email đã được duyệt Partner, mật khẩu mới sẽ được gửi trong ít phút. Hãy kiểm tra cả hộp thư Spam.', 'ok'); })
+      .catch(function(err){ busy(btn, false); msg('fgMsg', err.message); });
+  });
+
+  function logout(expired){
+    if (state.token && !expired) api('logout').catch(function(){});
+    state.token = null; store.del('bp_token');
+    $('v-app').classList.add('hidden'); $('forceModal').classList.add('hidden'); $('v-login').classList.remove('hidden');
+    if (expired) msg('loginMsg', 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+  }
+  $('logoutBtn').onclick = function(){ logout(false); };
+
+  /* ---------- Vao portal ---------- */
+  var profile = {};
+  function enterApp(p, mustChange){
+    profile = p || {};
+    $('v-login').classList.add('hidden'); $('v-app').classList.remove('hidden');
+    $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = profile['Mã partner'] ? 'Mã Partner ' + profile['Mã partner'] : '';
+    fillProfile();
+    showTab(location.hash.replace('#','') || 'deals');
+    if (mustChange){ $('forceModal').classList.remove('hidden'); $('fm1').focus(); }
+  }
+
+  /* ---------- Tabs ---------- */
+  var loaded = {};
+  function showTab(t){
+    if (['deals','lead','res','me'].indexOf(t) < 0) t = 'deals';
+    document.querySelectorAll('.tab').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.tab === t ? 'true' : 'false'); });
+    ['deals','lead','res','me'].forEach(function(k){ $('p-'+k).classList.toggle('hidden', k !== t); });
+    if (history.replaceState) history.replaceState(null, '', '#' + t);
+    if (t === 'deals') loadDeals();
+    if (t === 'res' && !loaded.res) loadRes();
+  }
+  document.querySelectorAll('.tab').forEach(function(b){ b.addEventListener('click', function(){ showTab(b.dataset.tab); }); });
+
+  /* ---------- Deal ---------- */
+  function statusOf(d){
+    if (d.kiemTra === 'Không hợp lệ') return ['Không hợp lệ','b-bad'];
+    if (d.kiemTra === 'Trùng lead') return ['Trùng lead','b-bad'];
+    if (d.kiemTra !== 'Hợp lệ') return ['Đang kiểm tra','b-wait'];
+    if (d.giaiDoan === 'THÀNH CÔNG') return ['Thành công','b-won'];
+    if (d.giaiDoan === 'THẤT BẠI') return ['Thất bại','b-lost'];
+    return [d.giaiDoan ? cap(d.giaiDoan) : 'Hợp lệ','b-stage'];
+  }
+  var NAMES = {'LEAD - OUTREACH':'Lead - Outreach','FIRST TOUCH':'First Touch','MQL':'MQL','MEETING BOOKED':'Meeting Booked','SAL':'SAL','SHOWCASE':'Showcase','NEGOTIATION':'Negotiation','PAYMENT':'Payment'};
+  function cap(s){ return NAMES[s] || String(s); }
+  function pct(v){ if (v === '' || v == null) return '–'; var n = Number(String(v).replace(',','.').replace('%','')); if (isNaN(n)) return esc(v); return (n > 0 && n < 1 ? n*100 : n) + '%'; }
+  function money(v){ var n = Number(String(v||'').replace(/[^\d]/g,'')); return n ? n.toLocaleString('vi-VN') + ' đ' : '–'; }
+
+  function loadDeals(){
+    var box = $('dealBox');
+    if (!loaded.deals) box.innerHTML = '<div class="empty"><span class="spin" style="color:var(--blue)"></span></div>';
+    api('myDeals').then(function(r){
+      if (!r.ok) { box.innerHTML = '<div class="empty">'+esc(r.error)+'</div>'; return; }
+      loaded.deals = true; renderDeals(r.deals || []);
+    }).catch(function(err){ box.innerHTML = '<div class="empty">'+esc(err.message)+'</div>'; });
+  }
+  $('reloadDeals').onclick = function(){ loaded.deals = false; loadDeals(); };
+
+  function renderDeals(list){
+    var valid = list.filter(function(d){ return d.kiemTra === 'Hợp lệ'; });
+    $('sTotal').textContent = list.length; $('sValid').textContent = valid.length;
+    $('sWon').textContent = valid.filter(function(d){ return d.giaiDoan === 'THÀNH CÔNG'; }).length;
+    $('sOpen').textContent = list.filter(function(d){ return d.kiemTra === 'Chờ kiểm tra' || !d.kiemTra || (d.kiemTra === 'Hợp lệ' && d.giaiDoan !== 'THÀNH CÔNG' && d.giaiDoan !== 'THẤT BẠI'); }).length;
+    if (!list.length){
+      $('dealBox').innerHTML = '<div class="empty"><b>Bạn chưa có lead nào</b>Giới thiệu khách hàng đầu tiên ở mục Đăng ký lead.<br><br><button class="btn sm" id="goLead">Đăng ký lead</button></div>';
+      $('goLead').onclick = function(){ showTab('lead'); }; return;
+    }
+    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% hoa hồng</th><th>BC phụ trách</th><th>Cập nhật</th></tr></thead><tbody>';
+    list.forEach(function(d, i){
+      var st = statusOf(d);
+      h += '<tr class="row" data-i="'+i+'" tabindex="0" aria-expanded="false"><td data-l="Mã lead"><b>'+esc(d.ma)+'</b></td><td data-l="Thời gian">'+esc(d.thoiGian)+'</td>' +
+        '<td data-l="Công ty"><span class="co">'+esc(d.congTy)+'</span><small>'+esc(d.sanPham)+'</small></td>' +
+        '<td data-l="Trạng thái"><span class="badge '+st[1]+'">'+esc(st[0])+'</span></td><td data-l="% hoa hồng">'+pct(d.hoaHong)+'</td>' +
+        '<td data-l="BC phụ trách">'+(esc(d.bc) || '–')+'</td><td data-l="Cập nhật">'+(esc(d.capNhat) || '–')+'</td></tr>' +
+        '<tr class="detail hidden" id="dt'+i+'"><td colspan="7">'+detail(d)+'</td></tr>';
+    });
+    $('dealBox').innerHTML = h + '</tbody></table>';
+    $('dealBox').querySelectorAll('tr.row').forEach(function(tr){
+      var tog = function(){ var dt = $('dt'+tr.dataset.i), open = dt.classList.toggle('hidden'); tr.setAttribute('aria-expanded', open ? 'false' : 'true'); };
+      tr.addEventListener('click', tog); tr.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); tog(); } });
+    });
+  }
+  function detail(d){
+    var idx = d.giaiDoan === 'THÀNH CÔNG' ? 8 : STAGES.indexOf(d.giaiDoan);
+    var pipe = d.kiemTra === 'Hợp lệ' ? '<div class="pipe">' + STAGES.map(function(s, i){ return '<i class="'+(i <= idx ? 'on' : '')+'">'+cap(s)+'</i>'; }).join('') + '</div>' : '';
+    return '<div class="dl"><div><span>Người liên hệ</span>'+(esc(d.lienHe)||'–')+'</div><div><span>Sản phẩm quan tâm</span>'+(esc(d.sanPham)||'–')+'</div>' +
+      '<div><span>Giá trị hợp đồng</span>'+money(d.giaTri)+'</div>' +
+      (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + pipe;
+  }
+
+  /* ---------- Dang ky lead ---------- */
+  var lf = $('leadForm');
+  function fieldErr(el, m){
+    var e = el.parentNode.querySelector('.err');
+    if (!e){ e = document.createElement('div'); e.className = 'err'; e.id = el.id + '-e'; el.parentNode.appendChild(e); }
+    e.textContent = m || ''; if (m){ el.setAttribute('aria-invalid','true'); el.setAttribute('aria-describedby', e.id); } else { el.removeAttribute('aria-invalid'); }
+  }
+  lf.querySelectorAll('[required]').forEach(function(el){ el.addEventListener('change', function(){ if (el.hasAttribute('aria-invalid')) fieldErr(el, el.checkValidity() ? '' : 'Vui lòng kiểm tra lại'); }); });
+  lf.addEventListener('submit', function(e){
+    e.preventDefault(); msg('leadMsg');
+    var first = null, data = {};
+    lf.querySelectorAll('.inp').forEach(function(el){
+      var bad = !el.checkValidity();
+      fieldErr(el, bad ? (el.validity.valueMissing ? 'Trường này là bắt buộc' : 'Định dạng chưa đúng') : '');
+      if (bad && !first) first = el;
+      data[el.name] = el.value.trim();
+    });
+    if (first){ first.focus(); return; }
+    var btn = $('leadBtn'); busy(btn, true, 'Đang gửi...');
+    api('submitLead', { lead: data }).then(function(r){
+      busy(btn, false);
+      if (!r.ok) return msg('leadMsg', r.error || 'Chưa gửi được lead.');
+      lf.reset(); loaded.deals = false;
+      $('leadCode').textContent = r.maLead; $('leadFormBox').classList.add('hidden'); $('leadDone').classList.remove('hidden');
+    }).catch(function(err){ busy(btn, false); msg('leadMsg', err.message); });
+  });
+  $('leadAgain').onclick = function(){ $('leadDone').classList.add('hidden'); $('leadFormBox').classList.remove('hidden'); $('l1').focus(); };
+
+  /* ---------- Tai nguyen ---------- */
+  function loadRes(){
+    var box = $('resBox'); box.innerHTML = '<div class="empty"><span class="spin" style="color:var(--blue)"></span></div>';
+    api('resources').then(function(r){
+      if (!r.ok) { box.innerHTML = '<div class="empty">'+esc(r.error)+'</div>'; return; }
+      loaded.res = true;
+      var groups = {}; (r.items || []).forEach(function(it){ (groups[it.group || 'Khác'] = groups[it.group || 'Khác'] || []).push(it); });
+      var keys = Object.keys(groups);
+      if (!keys.length){ box.innerHTML = '<div class="card empty"><b>Tài nguyên đang được cập nhật</b>Vui lòng quay lại sau.</div>'; return; }
+      box.innerHTML = keys.map(function(g){
+        return '<div class="res-group"><h3>'+esc(g)+'</h3><div class="res-grid">' + groups[g].map(function(it){
+          var ok = /^https?:\/\//i.test(it.link);
+          return '<div class="card res"><b>'+esc(it.title)+'</b><p>'+esc(it.desc)+'</p>' + (ok ? '<a href="'+esc(it.link)+'" target="_blank" rel="noopener">Mở tài liệu →</a>' : '<span class="soon">Đang cập nhật</span>') + '</div>';
+        }).join('') + '</div></div>';
+      }).join('');
+    }).catch(function(err){ box.innerHTML = '<div class="empty">'+esc(err.message)+'</div>'; });
+  }
+
+  /* ---------- Thong tin ---------- */
+  function fillProfile(){
+    $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
+    $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
+    $('mUpdated').textContent = profile['Cập nhật hồ sơ'] || 'Chưa cập nhật';
+    $('pfForm').querySelectorAll('.inp').forEach(function(el){
+      var v = profile[el.name] || '';
+      if (el.type === 'date' && /^\d{2}\/\d{2}\/\d{4}/.test(v)) v = v.slice(6,10) + '-' + v.slice(3,5) + '-' + v.slice(0,2);
+      el.value = v;
+    });
+  }
+  $('pfForm').addEventListener('submit', function(e){
+    e.preventDefault(); msg('pfMsg'); var data = {};
+    $('pfForm').querySelectorAll('.inp').forEach(function(el){ data[el.name] = el.value.trim(); });
+    var btn = $('pfBtn'); busy(btn, true, 'Đang lưu...');
+    api('saveProfile', { profile: data }).then(function(r){
+      busy(btn, false);
+      if (!r.ok) return msg('pfMsg', r.error);
+      profile = r.profile || profile; fillProfile(); $('pfSaved').textContent = 'Đã lưu lúc ' + new Date().toLocaleTimeString('vi-VN');
+    }).catch(function(err){ busy(btn, false); msg('pfMsg', err.message); });
+  });
+
+  function changePw(oldPw, p1, p2, msgId, btn, done){
+    if (p1.length < 8) return msg(msgId, 'Mật khẩu mới cần ít nhất 8 ký tự.');
+    if (p1 !== p2) return msg(msgId, 'Hai mật khẩu mới chưa khớp nhau.');
+    busy(btn, true, 'Đang lưu...');
+    api('changePassword', { oldPassword: oldPw, newPassword: p1 }).then(function(r){
+      busy(btn, false); if (!r.ok) return msg(msgId, r.error); done();
+    }).catch(function(err){ busy(btn, false); msg(msgId, err.message); });
+  }
+  $('cpForm').addEventListener('submit', function(e){
+    e.preventDefault(); msg('cpMsg');
+    changePw($('c1').value, $('c2').value, $('c3').value, 'cpMsg', $('cpBtn'), function(){ $('cpForm').reset(); msg('cpMsg', 'Đã đổi mật khẩu.', 'ok'); });
+  });
+  $('fmForm').addEventListener('submit', function(e){
+    e.preventDefault(); msg('fmMsg');
+    changePw(state.tempPw, $('fm1').value, $('fm2').value, 'fmMsg', $('fmBtn'), function(){ state.tempPw = ''; $('forceModal').classList.add('hidden'); });
+  });
+
+  /* ---------- Khoi dong ---------- */
+  if (state.token){
+    api('me').then(function(r){ if (r.ok) enterApp(r.profile, false); else logout(true); }).catch(function(){ logout(true); });
+  }
+})();
+</script>
+</body>
+</html>

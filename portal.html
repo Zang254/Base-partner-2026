@@ -251,7 +251,8 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
           <p class="lead-in">Thông tin khách hàng bạn muốn giới thiệu. Base sẽ kiểm tra và báo kết quả trong 24–48 giờ làm việc.</p>
           <div id="leadMsg"></div>
           <form class="lf" id="leadForm" novalidate>
-            <div class="full"><label for="l1">Họ và tên <span class="req">*</span></label><input class="inp" id="l1" name="Họ và tên" placeholder="Nhập tên người liên hệ" required></div>
+            <div class="full"><label for="l0">Partner ID <span class="req">*</span></label><input class="inp" id="l0" name="Partner ID" placeholder="Nhập Partner ID của bạn" required></div>
+            <div class="full"><label for="l1">Họ và tên khách hàng <span class="req">*</span></label><input class="inp" id="l1" name="Họ và tên" placeholder="Nhập tên người liên hệ" required></div>
             <div class="full"><label for="l2">Sản phẩm khách quan tâm <span class="req">*</span></label>
               <select class="inp" id="l2" name="Sản phẩm quan tâm" required><option value="">Lựa chọn sản phẩm</option><option>Base Work</option><option>Base CRM</option><option>Base HRM</option><option>AI &amp; Agents</option><option>Trọn bộ nền tảng Base</option><option>Chưa xác định</option></select></div>
             <div><label for="l3">Email <span class="req">*</span></label><input class="inp" id="l3" name="Email" type="email" placeholder="Nhập email khách hàng" required></div>
@@ -416,7 +417,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     profile = p || {};
     $('v-login').classList.add('hidden'); $('v-app').classList.remove('hidden');
     $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = profile['Mã partner'] ? 'Mã Partner ' + profile['Mã partner'] : '';
-    fillProfile();
+    fillProfile(); prefillPid();
     showTab(location.hash.replace('#','') || 'deals');
     if (mustChange){ $('forceModal').classList.remove('hidden'); $('fm1').focus(); }
   }
@@ -511,7 +512,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     api('submitLead', { lead: data }).then(function(r){
       busy(btn, false);
       if (!r.ok) return msg('leadMsg', r.error || 'Chưa gửi được lead.');
-      lf.reset(); loaded.deals = false;
+      lf.reset(); prefillPid(); loaded.deals = false;
       $('leadCode').textContent = r.maLead; $('leadFormBox').classList.add('hidden'); $('leadDone').classList.remove('hidden');
     }).catch(function(err){ busy(btn, false); msg('leadMsg', err.message); });
   });
@@ -536,6 +537,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   }
 
   /* ---------- Thong tin ---------- */
+  function prefillPid(){ var el = $('l0'); if (el && !el.value) el.value = profile['Mã partner'] || ''; }
   function fillProfile(){
     $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';

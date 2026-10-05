@@ -16,10 +16,13 @@
  *   BASE_WF_TOKEN   : access token v2 cua Base Workflow
  *   WF_ID           : ID workflow "MKT | Dang ky lead - Partner"
  *   WF_CREATOR      : username tai khoan dung ten tao nhiem vu (vd: giang.hoang03)
- *   WEBHOOK_SECRET  : chuoi bi mat tu dat, dung cho webhook tu Base Process
+ *   WEBHOOK_SECRET  : chuoi bi mat tu dat, dung cho webhook tu Base Workflow / Base CRM
+ *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
 const CONFIG = {
+  // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
+  SHEET_ID: '1PmC0IxpfZx1EHd3KkFVNLYNI9wUU6QDpLP5gkvfr-WY',
   ADMIN_EMAILS: 'giang.hoang03@base.vn',
   SITE_URL: 'https://zang254.github.io/Base-partner-2026/',
   PORTAL_URL: 'https://zang254.github.io/Base-partner-2026/portal.html',
@@ -37,7 +40,7 @@ const CONFIG = {
   // Truong tuy chinh dien khi tao nhiem vu: { 'ten truong tren Workflow': 'cot trong tab Lead' hoac '=gia tri co dinh' }
   WF_CREATE_FIELDS: {
     'Tên chương trình': '=AFF',
-    'Partner ID': 'Mã partner',
+    'Partner ID': 'Partner ID (Base)',
     'Công ty đề xuất': 'Công ty khách hàng',
     'Người liên hệ': 'Người liên hệ',
     'Số điện thoại': 'SĐT khách hàng',
@@ -65,7 +68,7 @@ const LEAD_HEADERS = ['Mã lead', 'Thời gian', 'Mã partner', 'Email partner',
   'Công ty khách hàng', 'Người liên hệ', 'Chức vụ', 'SĐT khách hàng', 'Email khách hàng', 'Quy mô KH',
   'Nhu cầu / ghi chú', 'Tên deal trên Base', 'Cảnh báo trùng', 'Kiểm tra lead', 'BC phụ trách',
   'Email BC', '% hoa hồng', 'Giai đoạn', 'Giá trị deal (VNĐ)', 'Ghi chú gửi partner', 'Cập nhật lần cuối',
-  'Sản phẩm quan tâm', 'Tỉnh/Thành phố', 'ID job Workflow', 'Giai đoạn Workflow', 'Link deal CRM'];
+  'Sản phẩm quan tâm', 'Tỉnh/Thành phố', 'ID job Workflow', 'Giai đoạn Workflow', 'Link deal CRM', 'Partner ID (Base)'];
 
 const RES_HEADERS = ['Nhóm', 'Tiêu đề', 'Mô tả', 'Link', 'Hiển thị'];
 
@@ -96,7 +99,7 @@ const STAGE_ALIAS = {
 
 /* ============================ CAI DAT ============================ */
 function caiDat() {
-  const ss = SpreadsheetApp.getActive();
+  const ss = ss_();
   const p = damBaoSheet_(ss, SHEET_PARTNER, PARTNER_HEADERS);
   const l = damBaoSheet_(ss, SHEET_LEAD, LEAD_HEADERS);
   damBaoSheet_(ss, SHEET_LOG, ['Thời gian', 'Khóa', 'Gửi tới', 'Tiêu đề']);
@@ -118,11 +121,14 @@ function caiDat() {
   ScriptApp.newTrigger('xuLyChinhSua').forSpreadsheet(ss).onEdit().create();
   ScriptApp.newTrigger('dongBoWorkflow').timeBased().everyMinutes(10).create();
 
-  SpreadsheetApp.getUi().alert('Cài đặt v2 xong!\n\n- Đã thêm cột/tab còn thiếu (dữ liệu cũ giữ nguyên).\n- Đã bật đồng bộ Base Workflow mỗi 10 phút.\n\nNhớ: Triển khai > Quản lý bản triển khai > Phiên bản mới.');
+  thongBao_('Cài đặt v2 xong!\n\n- Đã thêm cột/tab còn thiếu (dữ liệu cũ giữ nguyên).\n- Đã bật đồng bộ Base Workflow mỗi 10 phút.\n\nNhớ: Triển khai > Quản lý bản triển khai > Phiên bản mới.\n\nDữ liệu lưu tại: ' + ss.getUrl());
 }
+
+function thongBao_(m) { try { SpreadsheetApp.getUi().alert(m); } catch (e) { Logger.log(m); } }
 
 /* ============================ API ============================ */
 function doPost(e) {
+  if (e && e.parameter && e.parameter.src === 'wf') return json_(webhookWorkflow_(e));
   let d = {};
   try { d = docDuLieuPost_(e); } catch (err) { return json_({ ok: false, error: 'Dữ liệu không hợp lệ' }); }
   const action = d.action || 'register';
@@ -191,7 +197,7 @@ function dangKyPartner_(d) {
      <p>Cảm ơn bạn đã đăng ký chương trình Base Affiliate Partner 2026. Hồ sơ sẽ được xét duyệt trong <b>24-48 giờ làm việc</b>. Khi được duyệt, bạn sẽ nhận email kèm <b>mã Partner và tài khoản đăng nhập</b> Partner Portal.</p>`);
   guiEmail_('admin-partner|' + row['Email'] + '|' + Date.now(), CONFIG.ADMIN_EMAILS,
     `[Partner mới] ${row['Tên công ty']} - ${row['Họ và tên']}`,
-    `<p>Có đăng ký Partner mới cần duyệt:</p>${bang_(row)}<p><a href="${SpreadsheetApp.getActive().getUrl()}">Mở Google Sheet để duyệt</a></p>`);
+    `<p>Có đăng ký Partner mới cần duyệt:</p>${bang_(row)}<p><a href="${ss_().getUrl()}">Mở Google Sheet để duyệt</a></p>`);
   return { ok: true };
 }
 
@@ -295,12 +301,13 @@ function taiNguyen_() {
 
 /* ---------- 5) Dang ky lead ---------- */
 function guiLead_(email, L) {
-  const need = ['Họ và tên', 'Sản phẩm quan tâm', 'Email', 'Số điện thoại', 'Vị trí công việc', 'Tên công ty', 'Tỉnh/Thành phố', 'Quy mô nhân sự'];
+  const need = ['Partner ID', 'Họ và tên', 'Sản phẩm quan tâm', 'Email', 'Số điện thoại', 'Vị trí công việc', 'Tên công ty', 'Tỉnh/Thành phố', 'Quy mô nhân sự'];
   for (const k of need) if (!String(L[k] || '').trim()) return { ok: false, error: 'Vui lòng điền: ' + k };
   const partner = timPartner_(email);
   if (!partner || partner['Trạng thái duyệt'] !== 'Đã duyệt') return { ok: false, error: 'Tài khoản chưa được duyệt.' };
 
   const sh = sheet_(SHEET_LEAD), lock = LockService.getScriptLock();
+  if (!cot_(sh)['Partner ID (Base)']) damBaoSheet_(ss_(), SHEET_LEAD, LEAD_HEADERS);
   lock.waitLock(20000);
   let row;
   try {
@@ -315,6 +322,7 @@ function guiLead_(email, L) {
       'Tên deal trên Base': `[Partner ${partner['Họ và tên']}] ${congTy}`,
       'Cảnh báo trùng': kiemTraTrung_(sh, congTy, L['Số điện thoại']),
       'Kiểm tra lead': 'Chờ kiểm tra', 'Sản phẩm quan tâm': L['Sản phẩm quan tâm'], 'Tỉnh/Thành phố': L['Tỉnh/Thành phố'],
+      'Partner ID (Base)': String(L['Partner ID']).trim().slice(0, 100),
     };
     ghiDong_(sh, row);
   } finally { lock.releaseLock(); }
@@ -354,9 +362,19 @@ function wfProps_() {
 
 function wfCall_(path, params) {
   const pr = wfProps_(); if (!pr.token) return null;
-  const res = UrlFetchApp.fetch(CONFIG.WF_API + '/' + path, {
-    method: 'post', payload: Object.assign({ access_token: pr.token }, params), muteHttpExceptions: true });
-  try { return JSON.parse(res.getContentText()); } catch (e) { console.error(path, res.getContentText().slice(0, 500)); return null; }
+  const props = PropertiesService.getScriptProperties();
+  const saved = props.getProperty('WF_TOKEN_PARAM');
+  const modes = saved ? [saved] : ['access_token_v2', 'access_token', 'header'];
+  let last = null;
+  for (const m of modes) {
+    const payload = Object.assign({}, params), opt = { method: 'post', payload: payload, muteHttpExceptions: true };
+    if (m === 'header') opt.headers = { Authorization: 'Bearer ' + pr.token }; else payload[m] = pr.token;
+    const res = UrlFetchApp.fetch(CONFIG.WF_API + '/' + path, opt);
+    try { last = JSON.parse(res.getContentText()); } catch (e) { last = { code: 0, message: 'non_json', http: res.getResponseCode(), body: res.getContentText().slice(0, 300) }; }
+    const bad = last && /token/i.test(String(last.message || ''));
+    if (!bad) { if (!saved) props.setProperty('WF_TOKEN_PARAM', m); return last; }
+  }
+  return last;
 }
 
 // Danh sach truong tuy chinh cua workflow: { ten truong: id }
@@ -377,11 +395,13 @@ function wfFieldMap_() {
 }
 
 function taoJobWorkflow_(row) {
+  const hook = PropertiesService.getScriptProperties().getProperty('WF_WEBHOOK_CREATE');
+  if (hook) return taoJobQuaWebhook_(hook, row);
   const pr = wfProps_(); if (!pr.token || !pr.wfId || !pr.creator) return '';
   const fields = wfFieldMap_(), sdt = String(row['SĐT khách hàng']).replace(/^'/, '');
   const params = {
     workflow_id: pr.wfId, creator_username: pr.creator, name: row['Tên deal trên Base'],
-    content: `Mã lead: ${row['Mã lead']}\nPartner: ${row['Tên partner']} (${row['Mã partner']}) - ${row['Email partner']}\n` +
+    content: `Mã lead: ${row['Mã lead']}\nPartner ID: ${row['Partner ID (Base)'] || ''}\nPartner: ${row['Tên partner']} (${row['Mã partner']}) - ${row['Email partner']}\n` +
       `Khách hàng: ${row['Người liên hệ']} - ${row['Chức vụ']}\nCông ty: ${row['Công ty khách hàng']}\n` +
       `SĐT: ${sdt} | Email: ${row['Email khách hàng']}\n` +
       `Sản phẩm: ${row['Sản phẩm quan tâm']} | Quy mô: ${row['Quy mô KH']} | Khu vực: ${row['Tỉnh/Thành phố']}\n` +
@@ -399,11 +419,18 @@ function taoJobWorkflow_(row) {
   return id ? String(id) : '';
 }
 
-// Doc nhiem vu: { stage, fields: { ten truong: gia tri } }
+// Doc nhiem vu qua API: { stage, fields }
 function docJob_(id) {
   const res = wfCall_('job/get', { id: id }); if (!res) return null;
-  const job = res.job || res.data || res;
-  let stage = (job.stage && (job.stage.name || job.stage.title)) || job.stage_name || job.stage_title || job.stage_export || '';
+  return parseJob_(res.job || res.data || res);
+}
+
+// Doc stage + gia tri truong tu du lieu nhiem vu (API hoac webhook)
+function parseJob_(job) {
+  job = job.job || job.data || job;
+  const st = job.stage;
+  let stage = (st && typeof st === 'object' && (st.name || st.title)) || (typeof st === 'string' && isNaN(st) ? st : '') ||
+    job.stage_name || job.stage_title || job.stage_export || '';
   if (String(job.status || '').toLowerCase() === 'failed' || String(job.failed) === '1') stage = stage || CONFIG.WF_STAGE_FAILED;
   const fields = {};
   (function walk(o) {
@@ -418,36 +445,108 @@ function docJob_(id) {
       Object.keys(o).forEach(k => walk(o[k]));
     }
   })(job);
+  // Truong hop webhook gui dang phang { "Tình trạng lead": "Hợp lệ", ... }
+  [CONFIG.WF_FIELD_VALID, CONFIG.WF_FIELD_PERCENT, CONFIG.WF_FIELD_BC, CONFIG.WF_FIELD_CRM].forEach(k => {
+    if (!fields[k] && job[k] !== undefined && typeof job[k] !== 'object') fields[k] = String(job[k]);
+  });
   return { stage: String(stage), fields: fields };
 }
 
-// Chay moi 10 phut: doc ket qua Approved & Assign tu Workflow
+// Chay moi 10 phut (chi khi dung token API)
 function dongBoWorkflow() {
   const pr = wfProps_(); if (!pr.token) return;
   const sh = sheet_(SHEET_LEAD); if (sh.getLastRow() < 2) return;
   const c = cot_(sh), n = sh.getLastRow() - 1, data = sh.getRange(2, 1, n, sh.getLastColumn()).getValues();
   for (let i = 0; i < n; i++) {
-    const v = data[i], r = i + 2, id = v[c['ID job Workflow'] - 1];
-    const giaiDoan = v[c['Giai đoạn'] - 1], kiemTra = v[c['Kiểm tra lead'] - 1];
-    if (!id || giaiDoan === 'THÀNH CÔNG' || giaiDoan === 'THẤT BẠI' || kiemTra === 'Không hợp lệ' || kiemTra === 'Trùng lead') continue;
-    const job = docJob_(id); if (!job) continue;
-    if (job.stage && job.stage !== v[c['Giai đoạn Workflow'] - 1]) sh.getRange(r, c['Giai đoạn Workflow']).setValue(job.stage);
-    const crm = job.fields[CONFIG.WF_FIELD_CRM];
-    if (crm && crm !== v[c['Link deal CRM'] - 1]) sh.getRange(r, c['Link deal CRM']).setValue(crm);
-
-    if (!kiemTra || kiemTra === 'Chờ kiểm tra') {
-      const valid = String(job.fields[CONFIG.WF_FIELD_VALID] || '').toLowerCase();
-      if (valid.indexOf('trùng') >= 0 || valid.indexOf('không') === 0 || job.stage === CONFIG.WF_STAGE_FAILED) {
-        sh.getRange(r, c['Kiểm tra lead']).setValue(valid.indexOf('trùng') >= 0 ? 'Trùng lead' : 'Không hợp lệ');
-        xuLyKiemTraLead_(sh, r, c);
-      } else if (valid.indexOf('hợp lệ') >= 0 && job.fields[CONFIG.WF_FIELD_BC] && job.fields[CONFIG.WF_FIELD_PERCENT]) {
-        sh.getRange(r, c['BC phụ trách']).setValue(job.fields[CONFIG.WF_FIELD_BC]);
-        sh.getRange(r, c['% hoa hồng']).setValue(job.fields[CONFIG.WF_FIELD_PERCENT]);
-        sh.getRange(r, c['Kiểm tra lead']).setValue('Hợp lệ');
-        xuLyKiemTraLead_(sh, r, c);
-      }
-    }
+    const v = data[i], id = v[c['ID job Workflow'] - 1];
+    const gd = v[c['Giai đoạn'] - 1], kt = v[c['Kiểm tra lead'] - 1];
+    if (!id || gd === 'THÀNH CÔNG' || gd === 'THẤT BẠI' || kt === 'Không hợp lệ' || kt === 'Trùng lead') continue;
+    const job = docJob_(id); if (job) apDungJob_(sh, i + 2, c, job);
   }
+}
+
+// Cap nhat 1 dong lead theo du lieu nhiem vu Workflow: { stage, fields }
+function apDungJob_(sh, r, c, job) {
+  const v = docDong_(sh, r, c), kiemTra = v['Kiểm tra lead'];
+  if (job.stage && job.stage !== v['Giai đoạn Workflow']) sh.getRange(r, c['Giai đoạn Workflow']).setValue(job.stage);
+  const crm = job.fields[CONFIG.WF_FIELD_CRM];
+  if (crm && crm !== v['Link deal CRM']) sh.getRange(r, c['Link deal CRM']).setValue(crm);
+  if (kiemTra && kiemTra !== 'Chờ kiểm tra') return;
+  const valid = String(job.fields[CONFIG.WF_FIELD_VALID] || '').toLowerCase();
+  if (valid.indexOf('trùng') >= 0 || valid.indexOf('không') === 0 || job.stage === CONFIG.WF_STAGE_FAILED) {
+    sh.getRange(r, c['Kiểm tra lead']).setValue(valid.indexOf('trùng') >= 0 ? 'Trùng lead' : 'Không hợp lệ');
+    xuLyKiemTraLead_(sh, r, c);
+  } else if (valid.indexOf('hợp lệ') >= 0 && job.fields[CONFIG.WF_FIELD_BC] && job.fields[CONFIG.WF_FIELD_PERCENT]) {
+    sh.getRange(r, c['BC phụ trách']).setValue(job.fields[CONFIG.WF_FIELD_BC]);
+    sh.getRange(r, c['% hoa hồng']).setValue(job.fields[CONFIG.WF_FIELD_PERCENT]);
+    sh.getRange(r, c['Kiểm tra lead']).setValue('Hợp lệ');
+    xuLyKiemTraLead_(sh, r, c);
+  }
+}
+
+/* ============ KET NOI BASE WORKFLOW BANG WEBHOOK (khong can token) ============ */
+// Tao nhiem vu qua "Diem cuoi Webhook" cua workflow
+function taoJobQuaWebhook_(hook, row) {
+  const name = row['Tên deal trên Base'] + ' (' + row['Mã lead'] + ')';
+  const sdt = String(row['SĐT khách hàng']).replace(/^'/, '');
+  const content = `Mã lead: ${row['Mã lead']}\nPartner ID: ${row['Partner ID (Base)'] || ''}\nPartner: ${row['Tên partner']} (${row['Mã partner']}) - ${row['Email partner']}\n` +
+    `Khách hàng: ${row['Người liên hệ']} - ${row['Chức vụ']}\nCông ty: ${row['Công ty khách hàng']}\n` +
+    `SĐT: ${sdt} | Email: ${row['Email khách hàng']}\n` +
+    `Sản phẩm: ${row['Sản phẩm quan tâm']} | Quy mô: ${row['Quy mô KH']} | Khu vực: ${row['Tỉnh/Thành phố']}\n` +
+    (row['Nhu cầu / ghi chú'] ? `Ghi chú: ${row['Nhu cầu / ghi chú']}\n` : '') + (row['Cảnh báo trùng'] ? `CẢNH BÁO: ${row['Cảnh báo trùng']}` : '');
+  const payload = { name: name, content: content, description: content };
+  Object.keys(CONFIG.WF_CREATE_FIELDS).forEach(k => {
+    const src = CONFIG.WF_CREATE_FIELDS[k];
+    const val = src.charAt(0) === '=' ? src.slice(1) : String(row[src] || '').replace(/^'/, '').trim();
+    if (val) payload[k] = val;
+  });
+  // Gui; neu Base bao loi o truong tuy chinh nao thi bo truong do va gui lai (thong tin van nam trong noi dung)
+  const boQua = [];
+  for (let lan = 0; lan < 12; lan++) {
+    const res = UrlFetchApp.fetch(hook, { method: 'post', payload: payload, muteHttpExceptions: true });
+    const txt = res.getContentText();
+    let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    const loi = j && j.code === 0 ? String(j.message || '') : '';
+    const m = loi.match(/custom field\):\s*(.+?)\s*\(/i);
+    if (m && payload[m[1]] !== undefined) { boQua.push(m[1] + ' = ' + payload[m[1]]); delete payload[m[1]]; continue; }
+    const fieldsSent = Object.keys(payload).filter(k => ['name', 'content', 'description'].indexOf(k) < 0).join(', ');
+    ghiLogWebhook_(loi ? 'create-error' : 'create-ok', 'HTTP ' + res.getResponseCode() + ' | ' + txt.slice(0, 2000) +
+      ' | Trường đã gửi: ' + (fieldsSent || '(không)') + (boQua.length ? ' | Trường bị Base từ chối: ' + boQua.join('; ') : ''));
+    if (loi) return '';
+    const id = j && (j.id || (j.job && j.job.id) || (j.data && (j.data.id || (j.data.job && j.data.job.id))));
+    return id ? String(id) : 'webhook';
+  }
+  return '';
+}
+
+// Nhan webhook tu Base Workflow: URL dang  .../exec?src=wf&ev=TEN_SU_KIEN&secret=WEBHOOK_SECRET
+function webhookWorkflow_(e) {
+  const secret = PropertiesService.getScriptProperties().getProperty('WEBHOOK_SECRET');
+  if (!secret || e.parameter.secret !== secret) return { ok: false, error: 'unauthorized' };
+  const ev = e.parameter.ev || 'unknown';
+  let body = {};
+  const raw = (e.postData && e.postData.contents) || '';
+  try { body = raw.trim().charAt(0) === '{' ? JSON.parse(raw) : Object.assign({}, e.parameter); } catch (err) { body = Object.assign({}, e.parameter); }
+  Object.keys(body).forEach(k => { if (typeof body[k] === 'string' && /^[\[{]/.test(body[k].trim())) { try { body[k] = JSON.parse(body[k]); } catch (x) {} } });
+  ghiLogWebhook_(ev, (raw || JSON.stringify(e.parameter)).slice(0, 5000));
+
+  const str = JSON.stringify(body), m = str.match(/L\d{6}-\d{3,}/);
+  if (!m) return { ok: true, note: 'không thấy mã lead' };
+  const sh = sheet_(SHEET_LEAD), c = cot_(sh), n = sh.getLastRow() - 1; if (n < 1) return { ok: true };
+  const i = sh.getRange(2, c['Mã lead'], n, 1).getValues().flat().indexOf(m[0]); if (i < 0) return { ok: true, note: 'mã lead không có trong Sheet' };
+  const r = i + 2, job = parseJob_(body);
+  if (ev === 'failed' && !job.stage) job.stage = CONFIG.WF_STAGE_FAILED;
+  const jid = body.id || (body.job && body.job.id) || (body.data && body.data.id);
+  if (jid && /^\d+$/.test(String(jid))) sh.getRange(r, c['ID job Workflow']).setValue(String(jid));
+  apDungJob_(sh, r, c, job);
+  return { ok: true, lead: m[0], stage: job.stage };
+}
+
+function ghiLogWebhook_(ev, text) {
+  const ss = ss_(), sh = ss.getSheetByName('Webhook log') || ss.insertSheet('Webhook log');
+  if (sh.getLastRow() === 0) sh.appendRow(['Thời gian', 'Sự kiện', 'Dữ liệu']);
+  sh.appendRow([new Date(), ev, text]);
+  if (sh.getLastRow() > 500) sh.deleteRows(2, 100);
 }
 
 /* ============ WEBHOOK TU BASE CRM (qua Base Process) ============ */
@@ -642,7 +741,9 @@ function dropdown_(sh, header, list) {
   const col = cot_(sh)[header]; if (!col) return;
   sh.getRange(2, col, 2000, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build());
 }
-function sheet_(name) { return SpreadsheetApp.getActive().getSheetByName(name); }
+let SS_CACHE_ = null;
+function ss_() { return SS_CACHE_ || (SS_CACHE_ = CONFIG.SHEET_ID ? SpreadsheetApp.openById(CONFIG.SHEET_ID) : SpreadsheetApp.getActive()); }
+function sheet_(name) { return ss_().getSheetByName(name); }
 function cot_(sh) { const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]; const m = {}; h.forEach((v, i) => { if (v) m[v] = i + 1; }); return m; }
 function docDong_(sh, r, c) { const v = sh.getRange(r, 1, 1, sh.getLastColumn()).getValues()[0]; const o = {}; Object.keys(c).forEach(k => o[k] = v[c[k] - 1]); return o; }
 function ghiDong_(sh, obj) {
@@ -666,10 +767,44 @@ function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).se
 function esc_(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /* ============ CONG CU (chay tay trong Apps Script) ============ */
+// 0) Chuyen du lieu tu file Sheet cu (file dang gan voi Apps Script) sang file moi CONFIG.SHEET_ID
+//    Chay 1 lan SAU khi chay caiDat. Chi chep cac dong chua co (theo Email / Ma lead).
+function chuyenDuLieuCu() {
+  const oldSs = SpreadsheetApp.getActive(), newSs = ss_();
+  if (oldSs.getId() === newSs.getId()) { Logger.log('File cũ và file mới là một, không cần chuyển.'); return; }
+  const plan = [[SHEET_PARTNER, null], [SHEET_LEAD, 'Mã lead'], [SHEET_RES, 'Tiêu đề'], [SHEET_LOG, 'Khóa']];
+  plan.forEach(([name, keyCol]) => {
+    const src = oldSs.getSheetByName(name), dst = newSs.getSheetByName(name);
+    if (!src || !dst || src.getLastRow() < 2) return;
+    const sc = cot_(src), dc = cot_(dst);
+    const rows = src.getRange(2, 1, src.getLastRow() - 1, src.getLastColumn()).getValues();
+    const seen = {};
+    if (dst.getLastRow() > 1) {
+      const dv = dst.getRange(2, 1, dst.getLastRow() - 1, dst.getLastColumn()).getValues();
+      dv.forEach(v => { seen[keyCol ? v[dc[keyCol] - 1] : (v[dc['Email'] - 1] + '|' + v[dc['Thời gian'] - 1])] = 1; });
+    }
+    const out = [];
+    rows.forEach(v => {
+      const k = keyCol ? v[sc[keyCol] - 1] : (v[sc['Email'] - 1] + '|' + v[sc['Thời gian'] - 1]);
+      if (!k || seen[k]) return;
+      const arr = new Array(dst.getLastColumn()).fill('');
+      Object.keys(sc).forEach(h => { if (dc[h]) arr[dc[h] - 1] = v[sc[h] - 1]; });
+      out.push(arr);
+    });
+    if (out.length) dst.getRange(dst.getLastRow() + 1, 1, out.length, out[0].length).setValues(out);
+    Logger.log(name + ': đã chuyển ' + out.length + ' dòng.');
+  });
+}
+
 // 1) Kiem tra ket noi Base Workflow
 function kiemTraWorkflow() {
   const pr = wfProps_();
   Logger.log('Token: ' + (pr.token ? 'có' : 'THIẾU') + ' | WF_ID: ' + (pr.wfId || 'THIẾU') + ' | WF_CREATOR: ' + (pr.creator || 'THIẾU'));
+  if (pr.wfId && !/^\d+$/.test(String(pr.wfId).trim())) Logger.log('LỖI: WF_ID phải là một dãy số (lấy trong đường link workflow), đang là: ' + pr.wfId);
+  PropertiesService.getScriptProperties().deleteProperty('WF_TOKEN_PARAM');
+  const raw = wfCall_('workflow/get', { id: pr.wfId });
+  Logger.log('Cách gửi token đang dùng: ' + (PropertiesService.getScriptProperties().getProperty('WF_TOKEN_PARAM') || 'chưa xác định'));
+  Logger.log('Phản hồi gốc từ Base (rút gọn): ' + JSON.stringify(raw).replace(pr.token || '#', '***').slice(0, 3000));
   CacheService.getScriptCache().remove('wf_fields');
   Logger.log('Trường tùy chỉnh đọc được: ' + JSON.stringify(wfFieldMap_()));
 }

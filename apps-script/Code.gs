@@ -39,6 +39,13 @@ const CONFIG = {
   WF_FIELD_PERCENT: '% hoa hồng partner',
   WF_FIELD_BC: 'BC/CD phụ trách',
   WF_FIELD_CRM: 'Link deal CRM',
+  // Ma truong dau ra giai doan Approved & Assigned (Cai dat > Truong du lieu)
+  WF_CODE_VALID: 'custom_tinh_trang_lead',
+  WF_CODE_PERCENT: 'custom__hoa_hong_partner',
+  WF_CODE_BC: 'custom_bccd_phu_trach',
+  WF_CODE_CRM: 'custom_link_deal_crm',
+  // Neu Base gui ma lua chon thay vi chu, khai bao tai day, vd: { '1': 'Hợp lệ', '2': 'Không hợp lệ' }
+  WF_VALID_OPTIONS: {},
   // Truong tuy chinh dien khi tao nhiem vu: { 'ten truong tren Workflow': 'cot trong tab Lead' hoac '=gia tri co dinh' }
   // Ma truong tren Base Workflow (Cai dat > Truong dau vao): [ten hien thi, nguon du lieu]
   WF_CREATE_FIELDS: {
@@ -431,10 +438,13 @@ function docJob_(id) {
 
 // Doc stage + gia tri truong tu du lieu nhiem vu (API hoac webhook)
 function parseJob_(job) {
-  job = job.job || job.data || job;
+  // Chi lay job.job / job.data khi do that su la nhiem vu (webhook cua Base co truong 'data' khong phai nhiem vu)
+  const laJob = o => o && typeof o === 'object' && !Array.isArray(o) && (o.name !== undefined || o.stage !== undefined || o.stage_export !== undefined);
+  if (laJob(job.job)) job = job.job; else if (!laJob(job) && laJob(job.data)) job = job.data;
   const st = job.stage;
+  const se = job.stage_export && typeof job.stage_export === 'object' ? job.stage_export : null;
   let stage = (st && typeof st === 'object' && (st.name || st.title)) || (typeof st === 'string' && isNaN(st) ? st : '') ||
-    job.stage_name || job.stage_title || job.stage_export || '';
+    job.stage_name || job.stage_title || (se && se.name) || (typeof job.stage_export === 'string' ? job.stage_export : '') || '';
   if (String(job.status || '').toLowerCase() === 'failed' || String(job.failed) === '1') stage = stage || CONFIG.WF_STAGE_FAILED;
   const fields = {};
   (function walk(o) {
@@ -476,10 +486,26 @@ function parseJob_(job) {
     const hit = Object.keys(flat).find(k => ks.some(x => k === x || k.indexOf(x) >= 0) && flat[k] !== '');
     return hit ? flat[hit] : '';
   };
-  fields[CONFIG.WF_FIELD_VALID] = tim(CONFIG.WF_FIELD_VALID, ['tinh_trang_lead', 'tinh_trang']);
-  fields[CONFIG.WF_FIELD_PERCENT] = tim(CONFIG.WF_FIELD_PERCENT, ['hoa_hong_partner', 'hoa_hong']);
-  fields[CONFIG.WF_FIELD_BC] = tim(CONFIG.WF_FIELD_BC, ['bc_cd_phu_trach', 'phu_trach']);
-  fields[CONFIG.WF_FIELD_CRM] = tim(CONFIG.WF_FIELD_CRM, ['link_deal_crm', 'deal_crm']);
+  // id nguoi dung -> username (lay tu chinh du lieu webhook: moves, user_id/username...)
+  const users = {};
+  (function walkU(o) {
+    if (Array.isArray(o)) return o.forEach(walkU);
+    if (o && typeof o === 'object') {
+      if (o.user_id && o.username) users[String(o.user_id)] = o.username;
+      if (o.id && o.username) users[String(o.id)] = o.username;
+      Object.keys(o).forEach(k => walkU(o[k]));
+    }
+  })(job);
+  if (job.user_id && job.username) users[String(job.user_id)] = job.username;
+  const exact = code => { const v = flat[slug(code)]; return v === undefined ? '' : v; };
+  let valid = exact(CONFIG.WF_CODE_VALID) || tim(CONFIG.WF_FIELD_VALID, ['tinh_trang_lead', 'tinh_trang']);
+  if (CONFIG.WF_VALID_OPTIONS[valid]) valid = CONFIG.WF_VALID_OPTIONS[valid];
+  let bc = exact(CONFIG.WF_CODE_BC) || tim(CONFIG.WF_FIELD_BC, ['bccd_phu_trach', 'bc_cd_phu_trach', 'phu_trach']);
+  if (/^\d+$/.test(bc) && users[bc]) bc = users[bc];
+  fields[CONFIG.WF_FIELD_VALID] = valid;
+  fields[CONFIG.WF_FIELD_PERCENT] = exact(CONFIG.WF_CODE_PERCENT) || tim(CONFIG.WF_FIELD_PERCENT, ['hoa_hong_partner', 'hoa_hong']);
+  fields[CONFIG.WF_FIELD_BC] = bc;
+  fields[CONFIG.WF_FIELD_CRM] = exact(CONFIG.WF_CODE_CRM) || tim(CONFIG.WF_FIELD_CRM, ['link_deal_crm', 'deal_crm']);
   if (!stage) stage = flat['stage_name'] || flat['stage'] && isNaN(flat['stage']) && flat['stage'] || '';
   return { stage: String(stage), fields: fields };
 }
@@ -498,8 +524,10 @@ function dongBoWorkflow() {
 }
 
 // Cap nhat 1 dong lead theo du lieu nhiem vu Workflow: { stage, fields }
-function apDungJob_(sh, r, c, job) {
+function apDungJob_(sh, r, c0, job) {
+  let c = c0;
   const v = docDong_(sh, r, c), kiemTra = v['Kiểm tra lead'];
+  if (!c['Giai đoạn Workflow'] || !c['Link deal CRM']) { damBaoSheet_(ss_(), SHEET_LEAD, LEAD_HEADERS); c = cot_(sh); }
   if (job.stage && job.stage !== v['Giai đoạn Workflow']) sh.getRange(r, c['Giai đoạn Workflow']).setValue(job.stage);
   const crm = job.fields[CONFIG.WF_FIELD_CRM];
   if (crm && crm !== v['Link deal CRM']) sh.getRange(r, c['Link deal CRM']).setValue(crm);
@@ -568,18 +596,31 @@ function webhookWorkflow_(e) {
   const raw = (e.postData && e.postData.contents) || '';
   try { body = raw.trim().charAt(0) === '{' ? JSON.parse(raw) : Object.assign({}, e.parameter); } catch (err) { body = Object.assign({}, e.parameter); }
   Object.keys(body).forEach(k => { if (typeof body[k] === 'string' && /^[\[{]/.test(body[k].trim())) { try { body[k] = JSON.parse(body[k]); } catch (x) {} } });
-  ghiLogWebhook_(ev, (raw || JSON.stringify(e.parameter)).slice(0, 5000));
+  const BO_QUA = ['content', 'todos', 'moves', 'collaborators', 'workflow_export', 'followers', 'secret', '__ray', 'access_keys', 'base_blocks', 'progression', 'keyword', 'data', 'time'];
+  const tomTat = Object.keys(body).filter(k => BO_QUA.indexOf(k) < 0)
+    .map(k => k + '=' + (typeof body[k] === 'object' ? JSON.stringify(body[k]) : String(body[k])).slice(0, 300)).join(' | ');
+  ghiLogWebhook_(ev, tomTat.slice(0, 45000));
 
   const str = JSON.stringify(body), m = str.match(/L\d{6}-\d{3,}/);
   if (!m) return { ok: true, note: 'không thấy mã lead' };
   const sh = sheet_(SHEET_LEAD), c = cot_(sh), n = sh.getLastRow() - 1; if (n < 1) return { ok: true };
   const i = sh.getRange(2, c['Mã lead'], n, 1).getValues().flat().indexOf(m[0]); if (i < 0) return { ok: true, note: 'mã lead không có trong Sheet' };
-  const r = i + 2, job = parseJob_(body);
-  if (ev === 'failed' && !job.stage) job.stage = CONFIG.WF_STAGE_FAILED;
-  const jid = body.id || (body.job && body.job.id) || (body.data && body.data.id);
-  if (jid && /^\d+$/.test(String(jid))) sh.getRange(r, c['ID job Workflow']).setValue(String(jid));
-  apDungJob_(sh, r, c, job);
-  return { ok: true, lead: m[0], stage: job.stage };
+  const r = i + 2;
+  try {
+    const job = parseJob_(body);
+    if (ev === 'failed' && !job.stage) job.stage = CONFIG.WF_STAGE_FAILED;
+    const jid = body.id || (body.job && body.job.id);
+    if (jid && /^\d+$/.test(String(jid)) && c['ID job Workflow']) sh.getRange(r, c['ID job Workflow']).setValue(String(jid));
+    const truoc = sh.getRange(r, c['Kiểm tra lead']).getValue();
+    apDungJob_(sh, r, c, job);
+    const sau = sh.getRange(r, c['Kiểm tra lead']).getValue();
+    ghiLogWebhook_('ket-qua', m[0] + ' | giai đoạn: ' + job.stage + ' | đọc được: Tình trạng=' + job.fields[CONFIG.WF_FIELD_VALID] +
+      ', %=' + job.fields[CONFIG.WF_FIELD_PERCENT] + ', BC=' + job.fields[CONFIG.WF_FIELD_BC] + ' | Kiểm tra lead: ' + truoc + ' → ' + sau);
+    return { ok: true, lead: m[0], stage: job.stage };
+  } catch (err) {
+    ghiLogWebhook_('loi-xu-ly', m[0] + ' | ' + (err && err.stack || err));
+    return { ok: false, error: String(err) };
+  }
 }
 
 function ghiLogWebhook_(ev, text) {

@@ -449,10 +449,38 @@ function parseJob_(job) {
       Object.keys(o).forEach(k => walk(o[k]));
     }
   })(job);
-  // Truong hop webhook gui dang phang { "Tình trạng lead": "Hợp lệ", ... }
-  [CONFIG.WF_FIELD_VALID, CONFIG.WF_FIELD_PERCENT, CONFIG.WF_FIELD_BC, CONFIG.WF_FIELD_CRM].forEach(k => {
-    if (!fields[k] && job[k] !== undefined && typeof job[k] !== 'object') fields[k] = String(job[k]);
-  });
+  // Webhook co the gui theo ma truong (vd: tinh_trang_lead, hoa_hong_partner, bc_cd_phu_trach)
+  // -> lam phang toan bo du lieu va do theo ten/ma gan dung
+  const slug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const flat = {};
+  const hienThi = v => {
+    if (v === null || v === undefined) return '';
+    if (Array.isArray(v)) return v.map(hienThi).filter(String).join(', ');
+    if (typeof v === 'object') return v.display_value || v.display || v.name || v.fullname || v.username || v.title || v.label || (v.value !== undefined ? hienThi(v.value) : '');
+    return String(v);
+  };
+  (function walk(o, path) {
+    if (Array.isArray(o)) { o.forEach((x, i) => walk(x, path)); return; }
+    if (o && typeof o === 'object') {
+      Object.keys(o).forEach(k => {
+        const v = o[k];
+        if (v === null || typeof v !== 'object' || Array.isArray(v) && v.every(x => typeof x !== 'object')) flat[slug(k)] = hienThi(v);
+        else { flat[slug(k)] = flat[slug(k)] || hienThi(v); walk(v, k); }
+      });
+    }
+  })(job, '');
+  Object.keys(fields).forEach(k => { flat[slug(k)] = fields[k]; });
+  const tim = (label, extra) => {
+    if (fields[label]) return fields[label];
+    const ks = [slug(label)].concat(extra || []);
+    const hit = Object.keys(flat).find(k => ks.some(x => k === x || k.indexOf(x) >= 0) && flat[k] !== '');
+    return hit ? flat[hit] : '';
+  };
+  fields[CONFIG.WF_FIELD_VALID] = tim(CONFIG.WF_FIELD_VALID, ['tinh_trang_lead', 'tinh_trang']);
+  fields[CONFIG.WF_FIELD_PERCENT] = tim(CONFIG.WF_FIELD_PERCENT, ['hoa_hong_partner', 'hoa_hong']);
+  fields[CONFIG.WF_FIELD_BC] = tim(CONFIG.WF_FIELD_BC, ['bc_cd_phu_trach', 'phu_trach']);
+  fields[CONFIG.WF_FIELD_CRM] = tim(CONFIG.WF_FIELD_CRM, ['link_deal_crm', 'deal_crm']);
+  if (!stage) stage = flat['stage_name'] || flat['stage'] && isNaN(flat['stage']) && flat['stage'] || '';
   return { stage: String(stage), fields: fields };
 }
 

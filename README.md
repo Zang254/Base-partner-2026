@@ -12,7 +12,6 @@ Website chương trình Partner của Base.vn + Partner Portal, backend chạy t
 | `index.html` | Trang giới thiệu, chính sách, form đăng ký Partner, nút Đăng nhập |
 | `portal.html` | Partner Portal: Deal của tôi, Đăng ký lead, Tài nguyên, Thông tin của tôi |
 | `apps-script/Code.gs` | Backend: tài khoản, API cho Portal, đồng bộ Base Workflow, webhook Base CRM, email tự động |
-| `unbounce/unbounce-partner.html` | Bản trang giới thiệu để dán vào Custom HTML của Unbounce |
 
 ## Luồng hoạt động
 

@@ -447,7 +447,8 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   }
   var NAMES = {'LEAD - OUTREACH':'Lead - Outreach','FIRST TOUCH':'First Touch','MQL':'MQL','MEETING BOOKED':'Meeting Booked','SAL':'SAL','SHOWCASE':'Showcase','NEGOTIATION':'Negotiation','PAYMENT':'Payment'};
   function cap(s){ return NAMES[s] || String(s); }
-  function pct(v){ if (v === '' || v == null) return '–'; var n = Number(String(v).replace(',','.').replace('%','')); if (isNaN(n)) return esc(v); return (n > 0 && n < 1 ? n*100 : n) + '%'; }
+  function pct(v){ if (v === '' || v == null) return '–'; var n = Number(String(v).replace(',','.').replace('%','')); if (isNaN(n)) return esc(v); return Math.round((n > 0 && n < 1 ? n*100 : n)*100)/100 + '%'; }
+  function phanLoai(v){ var n = Number(String(v||'').replace(',','.').replace('%','')); if (isNaN(n) || v === '') return ''; n = Math.round((n > 0 && n < 1 ? n*100 : n)*100)/100; return n === 15 ? 'Khách hàng mới · up/cross 10%' : n === 7 ? 'Khách hàng tái kích hoạt · up/cross 5%' : n === 0 ? 'Đang được Base chăm sóc' : ''; }
   function money(v){ var n = Number(String(v||'').replace(/[^\d]/g,'')); return n ? n.toLocaleString('vi-VN') + ' đ' : '–'; }
 
   function loadDeals(){
@@ -469,7 +470,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       $('dealBox').innerHTML = '<div class="empty"><b>Bạn chưa có lead nào</b>Giới thiệu khách hàng đầu tiên ở mục Đăng ký lead.<br><br><button class="btn sm" id="goLead">Đăng ký lead</button></div>';
       $('goLead').onclick = function(){ showTab('lead'); }; return;
     }
-    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% hoa hồng</th><th>BC phụ trách</th><th>Cập nhật</th></tr></thead><tbody>';
+    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% HH bán mới</th><th>BC phụ trách</th><th>Cập nhật</th></tr></thead><tbody>';
     list.forEach(function(d, i){
       var st = statusOf(d);
       h += '<tr class="row" data-i="'+i+'" tabindex="0" aria-expanded="false"><td data-l="Mã lead"><b>'+esc(d.ma)+'</b></td><td data-l="Thời gian">'+esc(d.thoiGian)+'</td>' +
@@ -488,7 +489,8 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     var idx = d.giaiDoan === 'THÀNH CÔNG' ? 8 : STAGES.indexOf(d.giaiDoan);
     var pipe = d.kiemTra === 'Hợp lệ' ? '<div class="pipe">' + STAGES.map(function(s, i){ return '<i class="'+(i <= idx ? 'on' : '')+'">'+cap(s)+'</i>'; }).join('') + '</div>' : '';
     return '<div class="dl"><div><span>Người liên hệ</span>'+(esc(d.lienHe)||'–')+'</div><div><span>Sản phẩm quan tâm</span>'+(esc(d.sanPham)||'–')+'</div>' +
-      '<div><span>Giá trị hợp đồng</span>'+money(d.giaTri)+'</div>' +
+      '<div><span>Phân loại</span>'+(phanLoai(d.hoaHong) || '–')+'</div>' +
+      '<div><span>Doanh thu bán mới tính hoa hồng</span>'+money(d.giaTri)+'</div>' +
       (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + pipe;
   }
 

@@ -717,7 +717,8 @@ function xuLyKiemTraLead_(sh, r, c) {
       `<p>Chào ${esc_(l['Tên partner'])},</p>
        <p>Lead <b>${esc_(l['Công ty khách hàng'])}</b> (${l['Mã lead']}) đã được xác nhận <b>hợp lệ</b>.</p>
        <ul><li>Người phụ trách (BC): <b>${esc_(l['BC phụ trách'])}</b>${l['Email BC'] ? ' - ' + esc_(l['Email BC']) : ''}</li>
-       <li>Hoa hồng nếu deal thành công: <b>${phanTram_(l['% hoa hồng'])}</b> giá trị hợp đồng</li></ul>
+       ${dongHoaHong_(l['% hoa hồng'])}</ul>
+       <p style="font-size:13px;color:#64748B">Hoa hồng tính theo Chính sách Affiliate Partner 2026, căn cứ trạng thái khách hàng trên Base CRM tại thời điểm đăng ký cơ hội. Doanh thu triển khai không được tính hoa hồng trong mọi trường hợp.</p>
        <p>Bạn sẽ nhận email mỗi khi deal chuyển giai đoạn và theo dõi được trong mục <a href="${CONFIG.PORTAL_URL}">Deal của tôi</a>.</p>`, l['Email BC']);
     if (sent && !l['Giai đoạn']) sh.getRange(r, c['Giai đoạn']).setValue('LEAD - OUTREACH');
   } else if (kq === 'Không hợp lệ' || kq === 'Trùng lead') {
@@ -737,7 +738,7 @@ function xuLyGiaiDoan_(sh, r, c) {
   if (gd === 'THÀNH CÔNG') {
     const gt = Number(String(l['Giá trị deal (VNĐ)']).replace(/[^\d]/g, '')) || 0;
     const pt = Number(String(l['% hoa hồng']).replace(',', '.').replace('%', '')) || 0, p2 = pt > 0 && pt < 1 ? pt * 100 : pt;
-    if (gt) them = `<p>Giá trị hợp đồng: <b>${gt.toLocaleString('vi-VN')} đ</b><br>Hoa hồng dự kiến (${p2}%): <b>${Math.round(gt * p2 / 100).toLocaleString('vi-VN')} đ</b></p>
+    if (gt) them = `<p>Doanh thu bán mới tính hoa hồng (không gồm doanh thu triển khai): <b>${gt.toLocaleString('vi-VN')} đ</b><br>Hoa hồng bán mới dự kiến (${p2}%): <b>${Math.round(gt * p2 / 100).toLocaleString('vi-VN')} đ</b></p>
       <p>Đội ngũ Base sẽ liên hệ bạn về thủ tục nhận hoa hồng.</p>`;
   }
   const ghiChu = l['Ghi chú gửi partner'] ? `<p>${gd === 'THẤT BẠI' ? 'Lý do' : 'Ghi chú'}: ${esc_(l['Ghi chú gửi partner'])}</p>` : '';
@@ -783,8 +784,22 @@ function thanhTienDo_(gd) {
   return '<table cellspacing="3" style="margin:12px 0"><tr>' + main.map((s, i) =>
     `<td style="padding:4px 6px;font-size:10px;text-align:center;border-radius:4px;background:${i <= idx ? '#16A34A' : '#E2E8F0'};color:${i <= idx ? '#fff' : '#64748B'}">${s}</td>`).join('') + '</tr></table>';
 }
+// Phan loai theo bang chinh sach: 15% = KH moi (up/cross 10%), 7% = KH tai kich hoat (up/cross 5%)
+function phanLoaiHH_(v) {
+  const n = Number(String(v).replace(',', '.').replace('%', '')), p = Math.round((n > 0 && n < 1 ? n * 100 : n) * 100) / 100;
+  if (p === 15) return { loai: 'Khách hàng mới', moi: '15%', up: '10%' };
+  if (p === 7) return { loai: 'Khách hàng tái kích hoạt', moi: '7%', up: '5%' };
+  if (p === 0) return { loai: 'Khách hàng đang được Base chăm sóc', moi: '0%', up: '0%' };
+  return { loai: '', moi: isNaN(p) ? String(v) : p + '%', up: '' };
+}
+function dongHoaHong_(v) {
+  const h = phanLoaiHH_(v);
+  return (h.loai ? `<li>Phân loại: <b>${h.loai}</b></li>` : '') +
+    `<li>Hoa hồng bán mới: <b>${h.moi}</b></li>` +
+    (h.up ? `<li>Hoa hồng up-sell/cross-sell &amp; dịch vụ: <b>${h.up}</b> (ghi nhận trong 06 tháng)</li>` : '');
+}
 function tenGD_(gd) { return ({ 'THÀNH CÔNG': 'Thành công', 'THẤT BẠI': 'Thất bại' })[gd] || gd; }
-function phanTram_(v) { const n = Number(String(v).replace(',', '.').replace('%', '')); return isNaN(n) ? esc_(v) : (n > 0 && n < 1 ? n * 100 : n) + '%'; }
+function phanTram_(v) { const n = Number(String(v).replace(',', '.').replace('%', '')); return isNaN(n) ? esc_(v) : Math.round((n > 0 && n < 1 ? n * 100 : n) * 100) / 100 + '%'; }
 
 function kiemTraTrung_(sh, congTy, sdt, mst) {
   if (sh.getLastRow() < 2) return '';

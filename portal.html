@@ -178,6 +178,31 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 .modal{position:fixed;inset:0;background:rgba(10,15,30,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal .auth-card h1{margin-top:0}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition:none!important}}
+/* TONG QUAN DOANH THU / CAP BAC */
+.sum{padding:22px 24px;margin-bottom:20px}
+.sum-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.sum-top small{display:block;color:var(--muted);font-size:13.5px}
+.sum-top h3{font-size:24px;letter-spacing:-.02em;margin:2px 0 0}
+.pill{display:inline-block;padding:5px 12px;border-radius:999px;background:#E8F0FF;color:var(--blue);font-size:13px;font-weight:600}
+.bar-cap{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin:18px 0 8px;gap:12px;flex-wrap:wrap}
+.bar{height:10px;border-radius:5px;background:#E4E8F1;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--g-base);border-radius:5px}
+.tiers{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;font-size:11.5px;color:var(--muted)}
+.tiers span.on{color:var(--blue);font-weight:700}
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+@media(max-width:760px){.sum-grid{grid-template-columns:1fr 1fr}.tiers{font-size:10.5px}.sum-grid b{font-size:15.5px}.sum{padding:18px}}
+.sum-grid b{white-space:nowrap}
+.sum-grid div{background:var(--paper);border-radius:12px;padding:12px 14px}
+.sum-grid span{display:block;font-size:13px;color:var(--muted)}
+.sum-grid b{display:block;font-size:19px;font-weight:800;margin-top:2px}
+.rates{margin-top:14px;font-size:13.5px;color:var(--muted)}
+.rates b{color:var(--ink)}
+.rev{width:100%;border-collapse:collapse;font-size:13.5px;margin:4px 0 14px;background:#fff;border-radius:10px;overflow:hidden}
+.rev th{background:#EEF3FB;font-size:12.5px;padding:9px 12px}
+.rev td{padding:9px 12px;border-top:1px solid #EEF3FB}
+.rev td.n{text-align:right;white-space:nowrap}
+.rev small{display:block;color:var(--muted);font-size:12px}
+@media(max-width:700px){.rev thead{display:table-header-group}.rev,.rev tbody,.rev tr{display:table;width:100%}.rev tr{display:table-row}.rev td,.rev th{display:table-cell;padding:7px 8px}}
 </style>
 </head>
 <body>
@@ -234,6 +259,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     <section class="panel" id="p-deals">
       <div class="head-row"><div><h2>Deal của tôi</h2><p class="lead-in">Theo dõi trạng thái từng khách hàng bạn đã giới thiệu. Bấm vào một dòng để xem chi tiết.</p></div>
         <button class="btn ghost sm" id="reloadDeals">Làm mới</button></div>
+      <div class="card sum hidden" id="sumBox"></div>
       <div class="stats">
         <div class="card stat"><span>Tổng lead</span><b id="sTotal">–</b></div>
         <div class="card stat"><span>Lead hợp lệ</span><b id="sValid">–</b></div>
@@ -297,6 +323,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
           <dl>
             <div><dt>Họ và tên</dt><dd id="mName"></dd></div>
             <div><dt>Email</dt><dd id="mEmail"></dd></div>
+            <div><dt>Chương trình</dt><dd id="mProgram">Affiliate Partner</dd></div>
             <div><dt>Công ty</dt><dd id="mCompany"></dd></div>
             <div><dt>Cập nhật hồ sơ</dt><dd id="mUpdated">Chưa cập nhật</dd></div>
           </dl>
@@ -456,11 +483,30 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     if (!loaded.deals) box.innerHTML = '<div class="empty"><span class="spin" style="color:var(--blue)"></span></div>';
     api('myDeals').then(function(r){
       if (!r.ok) { box.innerHTML = '<div class="empty">'+esc(r.error)+'</div>'; return; }
-      loaded.deals = true; renderDeals(r.deals || []);
+      loaded.deals = true; renderSum(r.tongQuan || {}); renderDeals(r.deals || []);
     }).catch(function(err){ box.innerHTML = '<div class="empty">'+esc(err.message)+'</div>'; });
   }
   $('reloadDeals').onclick = function(){ loaded.deals = false; loadDeals(); };
 
+  function vnd(n){ n = Math.round(Number(n)||0); return n.toLocaleString('vi-VN') + ' đ'; }
+  function renderSum(q){
+    var box = $('sumBox');
+    if (!q || !q.chuongTrinh){ box.classList.add('hidden'); return; }
+    var h = '';
+    if (q.consulting){
+      var span = q.nguongTiep ? q.nguongTiep - q.nguongHienTai : 1, w = q.nguongTiep ? Math.min(100, Math.max(2, (q.dtKy - q.nguongHienTai) / span * 100)) : 100;
+      var tiers = ['Ambassador','Silver','Gold','Platinum','Diamond'].map(function(t){ return '<span class="'+(t===q.cap?'on':'')+'">'+t+'</span>'; }).join('');
+      h = '<div class="sum-top"><div><small>Consulting Partner · Kỳ tích luỹ thứ '+q.kyThu+'</small><h3>Cấp '+esc(q.cap)+'</h3></div><span class="pill">'+esc(q.ky)+'</span></div>' +
+        '<div class="bar-cap"><span>Doanh thu tích luỹ kỳ này: <b style="color:var(--ink)">'+vnd(q.dtKy)+'</b></span><span>'+(q.capTiep ? 'Còn '+vnd(q.conThieu)+' để lên '+esc(q.capTiep) : 'Bạn đang ở cấp cao nhất')+'</span></div>' +
+        '<div class="bar"><i style="width:'+w+'%"></i></div><div class="tiers">'+tiers+'</div>' +
+        '<p class="rates">Mức hiện tại: bán mới và up/cross (9 tháng) <b>'+q.mucBan+'%</b> · dịch vụ ngoài phần mềm <b>'+q.mucDV+'%</b> · gia hạn/up/cross sau thời hạn <b>'+q.mucSau+'%</b></p>';
+    } else {
+      h = '<div class="sum-top"><div><small>Affiliate Partner</small><h3>Tổng quan doanh thu</h3></div></div>';
+    }
+    h += '<div class="sum-grid"><div><span>Tổng doanh thu đã giới thiệu</span><b>'+vnd(q.tongDT)+'</b></div><div><span>Hoa hồng ghi nhận</span><b>'+vnd(q.tongHH)+'</b></div>' +
+      '<div><span>Đã chi trả</span><b>'+vnd(q.daChi)+'</b></div><div><span>Chờ đối soát</span><b style="color:#92400E">'+vnd(q.choChi)+'</b></div></div>';
+    box.innerHTML = h; box.classList.remove('hidden');
+  }
   function renderDeals(list){
     var valid = list.filter(function(d){ return d.kiemTra === 'Hợp lệ'; });
     $('sTotal').textContent = list.length; $('sValid').textContent = valid.length;
@@ -470,14 +516,15 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       $('dealBox').innerHTML = '<div class="empty"><b>Bạn chưa có lead nào</b>Giới thiệu khách hàng đầu tiên ở mục Đăng ký lead.<br><br><button class="btn sm" id="goLead">Đăng ký lead</button></div>';
       $('goLead').onclick = function(){ showTab('lead'); }; return;
     }
-    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% HH bán mới</th><th>BC phụ trách</th><th>Cập nhật</th></tr></thead><tbody>';
+    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% HH bán mới</th><th>Giá trị HĐ</th><th>Hoa hồng</th><th>BC phụ trách</th></tr></thead><tbody>';
     list.forEach(function(d, i){
       var st = statusOf(d);
       h += '<tr class="row" data-i="'+i+'" tabindex="0" aria-expanded="false"><td data-l="Mã lead"><b>'+esc(d.ma)+'</b></td><td data-l="Thời gian">'+esc(d.thoiGian)+'</td>' +
         '<td data-l="Công ty"><span class="co">'+esc(d.congTy)+'</span><small>'+esc(d.sanPham)+'</small></td>' +
         '<td data-l="Trạng thái"><span class="badge '+st[1]+'">'+esc(st[0])+'</span></td><td data-l="% hoa hồng">'+pct(d.hoaHong)+'</td>' +
-        '<td data-l="BC phụ trách">'+(esc(d.bc) || '–')+'</td><td data-l="Cập nhật">'+(esc(d.capNhat) || '–')+'</td></tr>' +
-        '<tr class="detail hidden" id="dt'+i+'"><td colspan="7">'+detail(d)+'</td></tr>';
+        '<td data-l="Giá trị HĐ">'+money(d.giaTri)+'</td><td data-l="Hoa hồng">'+money(d.hoaHongGhiNhan)+'</td>' +
+        '<td data-l="BC phụ trách">'+(esc(d.bc) || '–')+'</td></tr>' +
+        '<tr class="detail hidden" id="dt'+i+'"><td colspan="8">'+detail(d)+'</td></tr>';
     });
     $('dealBox').innerHTML = h + '</tbody></table>';
     $('dealBox').querySelectorAll('tr.row').forEach(function(tr){
@@ -491,7 +538,13 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     return '<div class="dl"><div><span>Người liên hệ</span>'+(esc(d.lienHe)||'–')+'</div><div><span>Sản phẩm quan tâm</span>'+(esc(d.sanPham)||'–')+'</div>' +
       '<div><span>Phân loại</span>'+(phanLoai(d.hoaHong) || '–')+'</div>' +
       '<div><span>Giá trị hợp đồng</span>'+money(d.giaTri)+'</div>' +
-      (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + pipe;
+      '<div><span>Ngày ký hợp đồng</span>'+(esc(d.ngayKy)||'–')+'</div><div><span>Cập nhật</span>'+(esc(d.capNhat)||'–')+'</div>' +
+      (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + revTable(d.doanhThu) + pipe;
+  }
+  function revTable(rows){
+    if (!rows || !rows.length) return '';
+    return '<table class="rev"><thead><tr><th>Loại doanh thu</th><th>Ngày ghi nhận</th><th style="text-align:right">Doanh thu</th><th style="text-align:right">Hoa hồng</th></tr></thead><tbody>' +
+      rows.map(function(x){ return '<tr><td>'+esc(x.loai)+(x.pct!==''&&x.pct!=null?' · '+esc(x.pct)+'%':'')+(x.ghiChu?'<small>'+esc(x.ghiChu)+'</small>':'')+'</td><td>'+esc(x.ngay)+'</td><td class="n">'+vnd(x.dt)+'</td><td class="n">'+(x.hh?vnd(x.hh):'Không tính')+'<small>'+esc(x.tt)+'</small></td></tr>'; }).join('') + '</tbody></table>';
   }
 
   /* ---------- Dang ky lead ---------- */
@@ -546,6 +599,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
     $('mUpdated').textContent = profile['Cập nhật hồ sơ'] || 'Chưa cập nhật';
+    $('mProgram').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
     $('pfForm').querySelectorAll('.inp').forEach(function(el){
       var v = profile[el.name] || '';
       if (el.type === 'date' && /^\d{2}\/\d{2}\/\d{4}/.test(v)) v = v.slice(6,10) + '-' + v.slice(3,5) + '-' + v.slice(0,2);

@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-06-mst';
+const CODE_VERSION = '2026-10-07-gthd';
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -44,6 +44,8 @@ const CONFIG = {
   WF_CODE_PERCENT: 'custom__hoa_hong_partner',
   WF_CODE_BC: 'custom_bccd_phu_trach',
   WF_CODE_CRM: 'custom_link_deal_crm',
+  WF_CODE_VALUE: 'gia_tri_hop_dong',      // Gia tri hop dong (o so, giai doan In Progress)
+  WF_FIELD_VALUE: 'Giá trị hợp đồng',
   // Neu Base gui ma lua chon thay vi chu, khai bao tai day, vd: { '1': 'Hợp lệ', '2': 'Không hợp lệ' }
   WF_VALID_OPTIONS: {},
   // Truong tuy chinh dien khi tao nhiem vu: { 'ten truong tren Workflow': 'cot trong tab Lead' hoac '=gia tri co dinh' }
@@ -74,11 +76,12 @@ const PARTNER_HEADERS = ['Thời gian', 'Họ và tên', 'Email', 'Số điện 
   'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản', 'Cập nhật hồ sơ',
   'Mật khẩu (mã hóa)', 'Salt', 'Phải đổi mật khẩu', 'Đăng nhập lần cuối'];
 
-const LEAD_HEADERS = ['Mã lead', 'Thời gian', 'Mã partner', 'Email partner', 'Tên partner',
-  'Công ty khách hàng', 'Người liên hệ', 'Chức vụ', 'SĐT khách hàng', 'Email khách hàng', 'Quy mô KH',
-  'Nhu cầu / ghi chú', 'Tên deal trên Base', 'Cảnh báo trùng', 'Kiểm tra lead', 'BC phụ trách',
-  'Email BC', '% hoa hồng', 'Giai đoạn', 'Giá trị deal (VNĐ)', 'Ghi chú gửi partner', 'Cập nhật lần cuối',
-  'Sản phẩm quan tâm', 'Tỉnh/Thành phố', 'ID job Workflow', 'Giai đoạn Workflow', 'Link deal CRM', 'Partner ID (Base)', 'MST khách hàng'];
+const LEAD_HEADERS = ['Mã lead', 'Thời gian', 'Mã partner', 'Partner ID (Base)', 'Email partner', 'Tên partner',
+  'Công ty khách hàng', 'MST khách hàng', 'Người liên hệ', 'Chức vụ', 'SĐT khách hàng', 'Email khách hàng',
+  'Tỉnh/Thành phố', 'Quy mô KH', 'Sản phẩm quan tâm', 'Nhu cầu / ghi chú',
+  'Tên deal trên Base', 'Cảnh báo trùng', 'Kiểm tra lead', 'BC phụ trách', 'Email BC', '% hoa hồng',
+  'Giai đoạn', 'Giá trị deal (VNĐ)', 'Ghi chú gửi partner', 'Cập nhật lần cuối',
+  'ID job Workflow', 'Giai đoạn Workflow', 'Link deal CRM'];
 
 const RES_HEADERS = ['Nhóm', 'Tiêu đề', 'Mô tả', 'Link', 'Hiển thị'];
 
@@ -323,7 +326,10 @@ function guiLead_(email, L) {
   lock.waitLock(20000);
   let row;
   try {
-    const maLead = 'L' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyMMdd') + '-' + String(sh.getLastRow()).padStart(3, '0');
+    const props = PropertiesService.getScriptProperties();
+    const seq = Math.max(Number(props.getProperty('LEAD_SEQ') || 0), sh.getLastRow()) + 1;
+    props.setProperty('LEAD_SEQ', String(seq));
+    const maLead = 'L' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyMMdd') + '-' + String(seq).padStart(3, '0');
     const congTy = String(L['Tên công ty']).trim();
     row = {
       'Mã lead': maLead, 'Thời gian': new Date(), 'Mã partner': partner['Mã partner'], 'Email partner': email,
@@ -506,6 +512,7 @@ function parseJob_(job) {
   fields[CONFIG.WF_FIELD_PERCENT] = exact(CONFIG.WF_CODE_PERCENT) || tim(CONFIG.WF_FIELD_PERCENT, ['hoa_hong_partner', 'hoa_hong']);
   fields[CONFIG.WF_FIELD_BC] = bc;
   fields[CONFIG.WF_FIELD_CRM] = exact(CONFIG.WF_CODE_CRM) || tim(CONFIG.WF_FIELD_CRM, ['link_deal_crm', 'deal_crm']);
+  fields[CONFIG.WF_FIELD_VALUE] = exact(CONFIG.WF_CODE_VALUE) || tim(CONFIG.WF_FIELD_VALUE, ['gia_tri_hop_dong']);
   if (!stage) stage = flat['stage_name'] || flat['stage'] && isNaN(flat['stage']) && flat['stage'] || '';
   return { stage: String(stage), fields: fields };
 }
@@ -531,6 +538,14 @@ function apDungJob_(sh, r, c0, job) {
   if (job.stage && job.stage !== v['Giai đoạn Workflow']) sh.getRange(r, c['Giai đoạn Workflow']).setValue(job.stage);
   const crm = job.fields[CONFIG.WF_FIELD_CRM];
   if (crm && crm !== v['Link deal CRM']) sh.getRange(r, c['Link deal CRM']).setValue(crm);
+  // Gia tri hop dong tu Workflow -> cot 'Giá trị deal (VNĐ)'
+  let gtRaw = String(job.fields[CONFIG.WF_FIELD_VALUE] || '').trim();
+  if (/^\d+[.,]\d{1,2}$/.test(gtRaw)) gtRaw = gtRaw.split(/[.,]/)[0];   // bo phan thap phan neu co
+  const gt = gtRaw.replace(/[^\d]/g, '');
+  if (gt && Number(gt) > 0 && c['Giá trị deal (VNĐ)'] && String(v['Giá trị deal (VNĐ)']).replace(/[^\d]/g, '') !== gt) {
+    sh.getRange(r, c['Giá trị deal (VNĐ)']).setValue(Number(gt)).setNumberFormat('#,##0');
+    sh.getRange(r, c['Cập nhật lần cuối']).setValue(new Date());
+  }
   if (kiemTra && kiemTra !== 'Chờ kiểm tra') return;
   const valid = String(job.fields[CONFIG.WF_FIELD_VALID] || '').toLowerCase();
   if (valid.indexOf('trùng') >= 0 || valid.indexOf('không') === 0 || job.stage === CONFIG.WF_STAGE_FAILED) {
@@ -615,7 +630,7 @@ function webhookWorkflow_(e) {
     apDungJob_(sh, r, c, job);
     const sau = sh.getRange(r, c['Kiểm tra lead']).getValue();
     ghiLogWebhook_('ket-qua', m[0] + ' | giai đoạn: ' + job.stage + ' | đọc được: Tình trạng=' + job.fields[CONFIG.WF_FIELD_VALID] +
-      ', %=' + job.fields[CONFIG.WF_FIELD_PERCENT] + ', BC=' + job.fields[CONFIG.WF_FIELD_BC] + ' | Kiểm tra lead: ' + truoc + ' → ' + sau);
+      ', %=' + job.fields[CONFIG.WF_FIELD_PERCENT] + ', BC=' + job.fields[CONFIG.WF_FIELD_BC] + ', Giá trị HĐ=' + (job.fields[CONFIG.WF_FIELD_VALUE] || '') + ' | Kiểm tra lead: ' + truoc + ' → ' + sau);
     return { ok: true, lead: m[0], stage: job.stage };
   } catch (err) {
     ghiLogWebhook_('loi-xu-ly', m[0] + ' | ' + (err && err.stack || err));
@@ -734,13 +749,18 @@ function xuLyKiemTraLead_(sh, r, c) {
 function xuLyGiaiDoan_(sh, r, c) {
   const l = docDong_(sh, r, c), gd = l['Giai đoạn'];
   if (!gd || !l['Email partner'] || l['Kiểm tra lead'] !== 'Hợp lệ' || gd === 'LEAD - OUTREACH') return;
-  let them = '';
-  if (gd === 'THÀNH CÔNG') {
+  if (gd === 'THÀNH CÔNG') {   // Email won deal: chi bao gia tri HD, chi tiet gui trong bien ban doi soat
     const gt = Number(String(l['Giá trị deal (VNĐ)']).replace(/[^\d]/g, '')) || 0;
-    const pt = Number(String(l['% hoa hồng']).replace(',', '.').replace('%', '')) || 0, p2 = pt > 0 && pt < 1 ? pt * 100 : pt;
-    if (gt) them = `<p>Doanh thu bán mới tính hoa hồng (không gồm doanh thu triển khai): <b>${gt.toLocaleString('vi-VN')} đ</b><br>Hoa hồng bán mới dự kiến (${p2}%): <b>${Math.round(gt * p2 / 100).toLocaleString('vi-VN')} đ</b></p>
-      <p>Đội ngũ Base sẽ liên hệ bạn về thủ tục nhận hoa hồng.</p>`;
+    guiEmail_('giaidoan|' + l['Mã lead'] + '|' + gd, l['Email partner'], `Won deal ${l['Công ty khách hàng']} (${l['Mã lead']})`,
+      `<p>Chào ${esc_(l['Tên partner'])},</p>
+       <p>Deal <b>${esc_(l['Công ty khách hàng'])}</b> (${l['Mã lead']}) đã <b>won</b>.</p>
+       <p>Giá trị hợp đồng: <b>${gt ? gt.toLocaleString('vi-VN') + ' đ' : 'đang cập nhật'}</b></p>
+       <p>Chi tiết sẽ được gửi trong <b>Biên bản đối soát</b> trước ngày 15 tháng sau.</p>
+       <p>Cảm ơn bạn đã đồng hành cùng Base.</p>`, l['Email BC']);
+    sh.getRange(r, c['Cập nhật lần cuối']).setValue(new Date());
+    return;
   }
+  const them = '';
   const ghiChu = l['Ghi chú gửi partner'] ? `<p>${gd === 'THẤT BẠI' ? 'Lý do' : 'Ghi chú'}: ${esc_(l['Ghi chú gửi partner'])}</p>` : '';
   guiEmail_('giaidoan|' + l['Mã lead'] + '|' + gd, l['Email partner'], `[${l['Mã lead']}] ${l['Công ty khách hàng']}: ${tenGD_(gd)}`,
     `<p>Chào ${esc_(l['Tên partner'])},</p>
@@ -864,6 +884,56 @@ function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).se
 function esc_(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /* ============ CONG CU (chay tay trong Apps Script) ============ */
+// A) Sap lai thu tu cot theo LEAD_HEADERS / PARTNER_HEADERS - GIU NGUYEN du lieu
+function sapXepLaiCot() {
+  dungLaiSheet_(SHEET_LEAD, LEAD_HEADERS, true);
+  dungLaiSheet_(SHEET_PARTNER, PARTNER_HEADERS, true);
+  caiDinhDang_();
+  thongBao_('Đã sắp lại thứ tự cột tab Lead và Partner. Dữ liệu giữ nguyên.');
+}
+// B) Xoa du lieu LEAD (giu partner + tai khoan), lam lai tu dau
+function lamMoiLead() {
+  dungLaiSheet_(SHEET_LEAD, LEAD_HEADERS, false);
+  xoaNoiDung_('Webhook log');
+  caiDinhDang_();
+  thongBao_('Đã xóa toàn bộ lead và Webhook log. Partner và tài khoản giữ nguyên.');
+}
+// C) Xoa SACH du lieu test: partner, lead, nhat ky email, webhook log. Ma partner dem lai tu P0001.
+function lamMoiTatCa() {
+  dungLaiSheet_(SHEET_LEAD, LEAD_HEADERS, false);
+  dungLaiSheet_(SHEET_PARTNER, PARTNER_HEADERS, false);
+  xoaNoiDung_(SHEET_LOG); xoaNoiDung_('Webhook log');
+  PropertiesService.getScriptProperties().deleteProperty('PARTNER_SEQ');
+  caiDinhDang_();
+  thongBao_('Đã xóa sạch dữ liệu test. Mã partner sẽ bắt đầu lại từ P0001.');
+}
+function dungLaiSheet_(name, headers, giuDuLieu) {
+  const ss = ss_(), sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  let rows = [];
+  if (giuDuLieu && sh.getLastRow() > 1) {
+    const c = cot_(sh), data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+    const extra = Object.keys(c).filter(h => headers.indexOf(h) < 0);   // cot tu them: dua ve cuoi, khong mat
+    headers = headers.concat(extra);
+    rows = data.filter(v => v.some(x => x !== '')).map(v => headers.map(h => c[h] ? v[c[h] - 1] : ''));
+  }
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
+  sh.showColumns(1, Math.max(sh.getMaxColumns(), 1));
+  sh.clear();
+  if (sh.getMaxColumns() < headers.length) sh.insertColumnsAfter(sh.getMaxColumns(), headers.length - sh.getMaxColumns());
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#E9EFF8');
+  sh.setFrozenRows(1);
+  if (rows.length) sh.getRange(2, 1, rows.length, headers.length).setValues(rows);
+}
+function xoaNoiDung_(name) { const sh = ss_().getSheetByName(name); if (sh && sh.getLastRow() > 1) sh.deleteRows(2, sh.getLastRow() - 1); }
+function caiDinhDang_() {
+  const p = sheet_(SHEET_PARTNER), l = sheet_(SHEET_LEAD);
+  dropdown_(p, 'Trạng thái duyệt', PARTNER_STATUS);
+  dropdown_(l, 'Kiểm tra lead', LEAD_CHECK);
+  dropdown_(l, 'Giai đoạn', STAGES);
+  ['Mật khẩu (mã hóa)', 'Salt'].forEach(h => { const c = cot_(p)[h]; if (c) p.hideColumns(c); });
+  ['MST khách hàng', 'SĐT khách hàng'].forEach(h => { const c = cot_(l)[h]; if (c) l.getRange(2, c, 2000, 1).setNumberFormat('@'); });
+}
+
 // 0) Chuyen du lieu tu file Sheet cu (NGUON_CU) sang file moi CONFIG.SHEET_ID
 //    Chay 1 lan SAU khi chay caiDat. Chi chep cac dong chua co (theo Email / Ma lead).
 // Doi NGUON_CU thanh ID file muon chep du lieu sang (de trong = file dang gan voi Apps Script)

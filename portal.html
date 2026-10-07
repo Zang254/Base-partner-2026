@@ -490,7 +490,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     var pipe = d.kiemTra === 'Hợp lệ' ? '<div class="pipe">' + STAGES.map(function(s, i){ return '<i class="'+(i <= idx ? 'on' : '')+'">'+cap(s)+'</i>'; }).join('') + '</div>' : '';
     return '<div class="dl"><div><span>Người liên hệ</span>'+(esc(d.lienHe)||'–')+'</div><div><span>Sản phẩm quan tâm</span>'+(esc(d.sanPham)||'–')+'</div>' +
       '<div><span>Phân loại</span>'+(phanLoai(d.hoaHong) || '–')+'</div>' +
-      '<div><span>Doanh thu bán mới tính hoa hồng</span>'+money(d.giaTri)+'</div>' +
+      '<div><span>Giá trị hợp đồng</span>'+money(d.giaTri)+'</div>' +
       (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + pipe;
   }
 

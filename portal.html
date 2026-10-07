@@ -475,7 +475,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   var NAMES = {'LEAD - OUTREACH':'Lead - Outreach','FIRST TOUCH':'First Touch','MQL':'MQL','MEETING BOOKED':'Meeting Booked','SAL':'SAL','SHOWCASE':'Showcase','NEGOTIATION':'Negotiation','PAYMENT':'Payment'};
   function cap(s){ return NAMES[s] || String(s); }
   function pct(v){ if (v === '' || v == null) return '–'; var n = Number(String(v).replace(',','.').replace('%','')); if (isNaN(n)) return esc(v); return Math.round((n > 0 && n < 1 ? n*100 : n)*100)/100 + '%'; }
-  function phanLoai(v){ var n = Number(String(v||'').replace(',','.').replace('%','')); if (isNaN(n) || v === '') return ''; n = Math.round((n > 0 && n < 1 ? n*100 : n)*100)/100; return n === 15 ? 'Khách hàng mới · up/cross 10%' : n === 7 ? 'Khách hàng tái kích hoạt · up/cross 5%' : n === 0 ? 'Đang được Base chăm sóc' : ''; }
+  function phanLoai(v){ if (String(profile['Chương trình']||'').toLowerCase() === 'consulting') return 'Consulting Partner'; var n = Number(String(v||'').replace(',','.').replace('%','')); if (isNaN(n) || v === '') return ''; n = Math.round((n > 0 && n < 1 ? n*100 : n)*100)/100; return n === 15 ? 'Khách hàng mới · up/cross 10%' : n === 7 ? 'Khách hàng tái kích hoạt · up/cross 5%' : n === 0 ? 'Đang được Base chăm sóc' : ''; }
   function money(v){ var n = Number(String(v||'').replace(/[^\d]/g,'')); return n ? n.toLocaleString('vi-VN') + ' đ' : '–'; }
 
   function loadDeals(){

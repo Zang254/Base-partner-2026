@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-07-consulting2'
+const CODE_VERSION = '2026-10-07-consulting3'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -178,7 +178,7 @@ function doPost(e) {
       case 'changePassword': return json_(withAuth_(d, email => doiMatKhau_(email, d.oldPassword, d.newPassword)));
       case 'resources': return json_(withAuth_(d, () => ({ ok: true, items: taiNguyen_() })));
       case 'submitLead': return json_(withAuth_(d, email => guiLead_(email, d.lead || {})));
-      case 'myDeals': return json_(withAuth_(d, email => ({ ok: true, deals: dealCuaToi_(email), tongQuan: tongQuanPartner_(email) })));
+      case 'myDeals': return json_(withAuth_(d, email => ({ ok: true, deals: dealCuaToi_(email), tongQuan: tongQuanChoPortal_(email) })));
       case 'logout': if (d.token) CacheService.getScriptCache().remove('s_' + d.token); return json_({ ok: true });
       case 'crm': return json_(webhookCrm_(d));
       default: return json_({ ok: false, error: 'Hành động không hợp lệ' });
@@ -394,8 +394,7 @@ function dealCuaToi_(email) {
     sanPham: f(v, 'Sản phẩm quan tâm'), kiemTra: f(v, 'Kiểm tra lead'), bc: f(v, 'BC phụ trách'),
     hoaHong: f(v, '% hoa hồng'), giaiDoan: f(v, 'Giai đoạn'), giaTri: f(v, 'Giá trị deal (VNĐ)'),
     ghiChu: f(v, 'Ghi chú gửi partner'), capNhat: f(v, 'Cập nhật lần cuối'),
-    hoaHongGhiNhan: f(v, 'Hoa hồng ghi nhận'), ngayKy: f(v, 'Ngày ký HĐ').slice(0, 10),
-    doanhThu: dongDoanhThu_(email, f(v, 'Mã lead'), f(v, 'Mã tạm')),
+    ngayKy: f(v, 'Ngày ký HĐ').slice(0, 10),
   })).reverse();
 }
 
@@ -1195,6 +1194,12 @@ function tongQuanTuDong_(p, rows) {
     Object.assign(q, { ky: ky.nhan, kyThu: ky.k + 1, dtKy: dtKy, cap: cb.ten, mucBan: cb.ban, mucDV: cb.dv, mucSau: cb.sau,
       capTiep: tiep ? tiep.ten : '', nguongTiep: tiep ? tiep.tu : 0, conThieu: tiep ? tiep.tu - dtKy : 0, nguongHienTai: cb.tu });
   }
+  return q;
+}
+// Portal chi hien cap bac / tich luy; so tien hoa hong gui partner qua doi soat rieng
+function tongQuanChoPortal_(email) {
+  const q = Object.assign({}, tongQuanPartner_(email));
+  delete q.tongHH; delete q.daChi; delete q.choChi;
   return q;
 }
 function tongQuanPartner_(email) { const p = timPartner_(email); return p ? tongQuanTuDong_(p, cacDongDT_(email)) : {}; }

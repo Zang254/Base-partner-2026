@@ -491,7 +491,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   function vnd(n){ n = Math.round(Number(n)||0); return n.toLocaleString('vi-VN') + ' đ'; }
   function renderSum(q){
     var box = $('sumBox');
-    if (!q || !q.chuongTrinh){ box.classList.add('hidden'); return; }
+    if (!q || !q.consulting){ box.classList.add('hidden'); return; }
     var h = '';
     if (q.consulting){
       var span = q.nguongTiep ? q.nguongTiep - q.nguongHienTai : 1, w = q.nguongTiep ? Math.min(100, Math.max(2, (q.dtKy - q.nguongHienTai) / span * 100)) : 100;
@@ -500,11 +500,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
         '<div class="bar-cap"><span>Doanh thu tích luỹ kỳ này: <b style="color:var(--ink)">'+vnd(q.dtKy)+'</b></span><span>'+(q.capTiep ? 'Còn '+vnd(q.conThieu)+' để lên '+esc(q.capTiep) : 'Bạn đang ở cấp cao nhất')+'</span></div>' +
         '<div class="bar"><i style="width:'+w+'%"></i></div><div class="tiers">'+tiers+'</div>' +
         '<p class="rates">Mức hiện tại: bán mới và up/cross (9 tháng) <b>'+q.mucBan+'%</b> · dịch vụ ngoài phần mềm <b>'+q.mucDV+'%</b> · gia hạn/up/cross sau thời hạn <b>'+q.mucSau+'%</b></p>';
-    } else {
-      h = '<div class="sum-top"><div><small>Affiliate Partner</small><h3>Tổng quan doanh thu</h3></div></div>';
     }
-    h += '<div class="sum-grid"><div><span>Tổng doanh thu đã giới thiệu</span><b>'+vnd(q.tongDT)+'</b></div><div><span>Hoa hồng ghi nhận</span><b>'+vnd(q.tongHH)+'</b></div>' +
-      '<div><span>Đã chi trả</span><b>'+vnd(q.daChi)+'</b></div><div><span>Chờ đối soát</span><b style="color:#92400E">'+vnd(q.choChi)+'</b></div></div>';
     box.innerHTML = h; box.classList.remove('hidden');
   }
   function renderDeals(list){
@@ -516,15 +512,15 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       $('dealBox').innerHTML = '<div class="empty"><b>Bạn chưa có lead nào</b>Giới thiệu khách hàng đầu tiên ở mục Đăng ký lead.<br><br><button class="btn sm" id="goLead">Đăng ký lead</button></div>';
       $('goLead').onclick = function(){ showTab('lead'); }; return;
     }
-    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% HH bán mới</th><th>Giá trị HĐ</th><th>Hoa hồng</th><th>BC phụ trách</th></tr></thead><tbody>';
+    var h = '<table><thead><tr><th>Mã lead</th><th>Thời gian</th><th>Công ty khách hàng</th><th>Trạng thái</th><th>% HH bán mới</th><th>Giá trị HĐ</th><th>BC phụ trách</th></tr></thead><tbody>';
     list.forEach(function(d, i){
       var st = statusOf(d);
       h += '<tr class="row" data-i="'+i+'" tabindex="0" aria-expanded="false"><td data-l="Mã lead"><b>'+esc(d.ma)+'</b></td><td data-l="Thời gian">'+esc(d.thoiGian)+'</td>' +
         '<td data-l="Công ty"><span class="co">'+esc(d.congTy)+'</span><small>'+esc(d.sanPham)+'</small></td>' +
         '<td data-l="Trạng thái"><span class="badge '+st[1]+'">'+esc(st[0])+'</span></td><td data-l="% hoa hồng">'+pct(d.hoaHong)+'</td>' +
-        '<td data-l="Giá trị HĐ">'+money(d.giaTri)+'</td><td data-l="Hoa hồng">'+money(d.hoaHongGhiNhan)+'</td>' +
+        '<td data-l="Giá trị HĐ">'+money(d.giaTri)+'</td>' +
         '<td data-l="BC phụ trách">'+(esc(d.bc) || '–')+'</td></tr>' +
-        '<tr class="detail hidden" id="dt'+i+'"><td colspan="8">'+detail(d)+'</td></tr>';
+        '<tr class="detail hidden" id="dt'+i+'"><td colspan="7">'+detail(d)+'</td></tr>';
     });
     $('dealBox').innerHTML = h + '</tbody></table>';
     $('dealBox').querySelectorAll('tr.row').forEach(function(tr){
@@ -539,12 +535,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       '<div><span>Phân loại</span>'+(phanLoai(d.hoaHong) || '–')+'</div>' +
       '<div><span>Giá trị hợp đồng</span>'+money(d.giaTri)+'</div>' +
       '<div><span>Ngày ký hợp đồng</span>'+(esc(d.ngayKy)||'–')+'</div><div><span>Cập nhật</span>'+(esc(d.capNhat)||'–')+'</div>' +
-      (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + revTable(d.doanhThu) + pipe;
-  }
-  function revTable(rows){
-    if (!rows || !rows.length) return '';
-    return '<table class="rev"><thead><tr><th>Loại doanh thu</th><th>Ngày ghi nhận</th><th style="text-align:right">Doanh thu</th><th style="text-align:right">Hoa hồng</th></tr></thead><tbody>' +
-      rows.map(function(x){ return '<tr><td>'+esc(x.loai)+(x.pct!==''&&x.pct!=null?' · '+esc(x.pct)+'%':'')+(x.ghiChu?'<small>'+esc(x.ghiChu)+'</small>':'')+'</td><td>'+esc(x.ngay)+'</td><td class="n">'+vnd(x.dt)+'</td><td class="n">'+(x.hh?vnd(x.hh):'Không tính')+'<small>'+esc(x.tt)+'</small></td></tr>'; }).join('') + '</tbody></table>';
+      (d.ghiChu ? '<div style="grid-column:1/-1"><span>Ghi chú từ Base</span>'+esc(d.ghiChu)+'</div>' : '') + '</div>' + pipe;
   }
 
   /* ---------- Dang ky lead ---------- */

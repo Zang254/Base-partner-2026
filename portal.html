@@ -161,9 +161,14 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 @media(max-width:900px){.prof{grid-template-columns:1fr}}
 .idcard{background:var(--g-aurora);color:#fff;border-radius:18px;padding:24px}
 .idcard small{color:#DCE8FF}
-.avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18) center/cover no-repeat;border:2px solid rgba(255,255,255,.5);margin-bottom:14px}
-.avatar:not(.has){display:none}
-.up-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ava-up{display:flex;align-items:center;gap:14px;margin-bottom:18px;cursor:pointer;width:fit-content}
+.avatar{width:76px;height:76px;flex:none;border-radius:50%;background:rgba(255,255,255,.18) center/cover no-repeat;border:2px solid rgba(255,255,255,.6);display:grid;place-items:center}
+.avatar i{font-style:normal;font-size:26px;font-weight:800}
+.avatar.has i{display:none}
+.ava-txt{font-size:13.5px;font-weight:600;padding:6px 12px;border:1px solid rgba(255,255,255,.55);border-radius:999px}
+.ava-up:hover .ava-txt{background:rgba(255,255,255,.15)}
+.ava-up:focus-within .avatar{outline:2px solid #fff;outline-offset:3px}
+.up-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 @media(max-width:640px){.up-grid{grid-template-columns:1fr}}
 .up{display:flex;flex-direction:column;gap:8px;align-items:flex-start;border:1.5px dashed #C7D2E3;border-radius:12px;padding:14px;cursor:pointer}
 .up:hover{border-color:var(--blue)}
@@ -330,7 +335,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       <p class="lead-in">Bổ sung thông tin cá nhân và tài khoản ngân hàng để Base lập hợp đồng và chi trả hoa hồng.</p>
       <div class="prof">
         <div class="idcard">
-          <div class="avatar" id="mAvatar" aria-hidden="true"></div>
+          <label class="ava-up" data-loai="chan_dung" title="Tải ảnh cá nhân"><input type="file" accept="image/jpeg,image/png" hidden><span class="avatar" id="mAvatar"><i id="mInit"></i></span><span class="ava-txt">Tải ảnh cá nhân</span></label>
           <small>Mã Partner</small>
           <div class="code" id="mCode">–</div>
           <dl>
@@ -362,13 +367,12 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
             </form>
           </div>
           <div class="card pf sec">
-            <h3>Ảnh giấy tờ</h3>
+            <h3>Ảnh CCCD</h3>
             <p class="note">Ảnh CCCD dùng để xác minh danh tính, lập hợp đồng và chứng từ chi trả hoa hồng. Ảnh được lưu riêng tư, chỉ đội ngũ Phát triển Đối tác của Base xem được. Chọn ảnh JPG hoặc PNG, chụp rõ nét, đủ 4 góc.</p>
             <div id="upMsg"></div>
             <div class="up-grid">
               <label class="up" data-loai="cccd_truoc"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt trước</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
               <label class="up" data-loai="cccd_sau"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt sau</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
-              <label class="up" data-loai="chan_dung"><input type="file" accept="image/jpeg,image/png" hidden><b>Ảnh cá nhân</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
             </div>
           </div>
           <div class="card pf sec">
@@ -622,6 +626,8 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
     $('mUpdated').textContent = profile['Cập nhật hồ sơ'] || 'Chưa cập nhật';
     var anh = profile.anh || {};
+    var nm = String(profile['Họ và tên']||'').trim().split(/\s+/).pop() || ''; $('mInit').textContent = nm.charAt(0).toUpperCase();
+    document.querySelector('.ava-up .ava-txt').textContent = anh.chan_dung ? 'Đổi ảnh' : 'Tải ảnh cá nhân';
     document.querySelectorAll('.up').forEach(function(el){ var ok = !!anh[el.dataset.loai]; el.classList.toggle('done', ok); el.querySelector('.up-st').textContent = ok ? 'Đã tải lên' : 'Chưa tải lên'; el.querySelector('.btn').textContent = ok ? 'Đổi ảnh' : 'Chọn ảnh'; });
     if (anh.chan_dung && !loaded.photo){ loaded.photo = true; api('myPhoto').then(function(r){ if (r.ok && r.data){ $('mAvatar').style.backgroundImage = 'url(' + r.data + ')'; $('mAvatar').classList.add('has'); } }).catch(function(){}); }
     $('mProgram').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
@@ -647,19 +653,19 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       img.src = url;
     });
   }
-  document.querySelectorAll('.up input').forEach(function(inp){
+  document.querySelectorAll('.up input, .ava-up input').forEach(function(inp){
     inp.addEventListener('change', function(){
-      var box = inp.closest('.up'), loai = box.dataset.loai, f = inp.files && inp.files[0]; inp.value = '';
-      if (!f) return; msg('upMsg');
-      var st = box.querySelector('.up-st'); st.textContent = 'Đang tải lên...';
+      var box = inp.closest('[data-loai]'), loai = box.dataset.loai, f = inp.files && inp.files[0]; inp.value = '';
+      if (!f) return; msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg');
+      var st = box.querySelector('.up-st, .ava-txt'); st.textContent = 'Đang tải lên...';
       nenAnh(f, loai === 'chan_dung' ? 800 : 1600).then(function(data){
         return api('uploadAnh', { loai: loai, data: data }).then(function(r){
           if (!r.ok) throw new Error(r.error || 'Tải ảnh không thành công.');
           profile = r.profile || profile;
           if (loai === 'chan_dung'){ $('mAvatar').style.backgroundImage = 'url(' + data + ')'; $('mAvatar').classList.add('has'); loaded.photo = true; }
-          fillProfile(); msg('upMsg', 'Đã tải ảnh lên.', 'ok');
+          fillProfile(); msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg', loai === 'chan_dung' ? 'Đã cập nhật ảnh cá nhân.' : 'Đã tải ảnh lên.', 'ok');
         });
-      }).catch(function(err){ fillProfile(); msg('upMsg', err.message); });
+      }).catch(function(err){ fillProfile(); msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg', err.message); });
     });
   });
 

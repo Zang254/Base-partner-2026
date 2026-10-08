@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-08-xemportal'
+const CODE_VERSION = '2026-10-08-xemportal2'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -993,6 +993,7 @@ function caiDinhDang_() {
   dropdown_(sheet_(SHEET_REV), 'Trạng thái chi trả', PAY_STATUS);
   dropdown_(sheet_(SHEET_REV), 'Loại doanh thu', Object.keys(LOAI_DT).map(k => LOAI_DT[k]));
   ['Mật khẩu (mã hóa)', 'Salt'].forEach(h => { const c = cot_(p)[h]; if (c) p.hideColumns(c); });
+  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).insertCheckboxes(); }
   ['MST khách hàng', 'SĐT khách hàng'].forEach(h => { const c = cot_(l)[h]; if (c) l.getRange(2, c, 2000, 1).setNumberFormat('@'); });
 }
 

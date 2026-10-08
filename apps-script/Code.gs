@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-07-consulting3'
+const CODE_VERSION = '2026-10-08-xemportal'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -83,6 +83,7 @@ const PARTNER_HEADERS = ['Thời gian', 'Họ và tên', 'Email', 'Số điện 
   'Vị trí công việc', 'Website công ty', 'Profile', 'Mã số thuế', 'Quy mô nhân sự', 'Kỳ vọng hợp tác',
   'Trạng thái duyệt', 'Mã partner', 'Chương trình', 'Ngày bắt đầu kỳ', 'Cấp bậc', 'DT tích luỹ kỳ này',
   'Tổng doanh thu', 'Tổng hoa hồng', 'Hoa hồng đã chi', 'Ghi chú gửi partner', 'Ghi chú nội bộ',
+  'Xem Portal', 'Link xem Portal',
   'Ngày sinh', 'Địa chỉ thường trú', 'Địa chỉ tạm trú', 'Số CMND/CCCD', 'MST cá nhân',
   'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản', 'Cập nhật hồ sơ',
   'Mật khẩu (mã hóa)', 'Salt', 'Phải đổi mật khẩu', 'Đăng nhập lần cuối'];
@@ -151,6 +152,7 @@ function caiDat() {
   dropdown_(sheet_(SHEET_REV), 'Trạng thái chi trả', PAY_STATUS);
   dropdown_(sheet_(SHEET_REV), 'Loại doanh thu', Object.keys(LOAI_DT).map(k => LOAI_DT[k]));
   ['Mật khẩu (mã hóa)', 'Salt'].forEach(h => { const c = cot_(p)[h]; if (c) p.hideColumns(c); });
+  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).insertCheckboxes(); }
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('xuLyChinhSua').forSpreadsheet(ss).onEdit().create();
@@ -173,13 +175,13 @@ function doPost(e) {
       case 'register': return json_(dangKyPartner_(d));
       case 'login': return json_(dangNhap_(d));
       case 'forgot': return json_(quenMatKhau_(d));
-      case 'me': return json_(withAuth_(d, email => ({ ok: true, profile: hoSo_(email) })));
-      case 'saveProfile': return json_(withAuth_(d, email => luuHoSo_(email, d.profile || {})));
-      case 'changePassword': return json_(withAuth_(d, email => doiMatKhau_(email, d.oldPassword, d.newPassword)));
+      case 'me': return json_(withAuth_(d, email => ({ ok: true, profile: hoSo_(email), viewOnly: chiXem_(d) })));
+      case 'saveProfile': return json_(chanGhi_(d, email => luuHoSo_(email, d.profile || {})));
+      case 'changePassword': return json_(chanGhi_(d, email => doiMatKhau_(email, d.oldPassword, d.newPassword)));
       case 'resources': return json_(withAuth_(d, () => ({ ok: true, items: taiNguyen_() })));
-      case 'submitLead': return json_(withAuth_(d, email => guiLead_(email, d.lead || {})));
+      case 'submitLead': return json_(chanGhi_(d, email => guiLead_(email, d.lead || {})));
       case 'myDeals': return json_(withAuth_(d, email => ({ ok: true, deals: dealCuaToi_(email), tongQuan: tongQuanChoPortal_(email) })));
-      case 'logout': if (d.token) CacheService.getScriptCache().remove('s_' + d.token); return json_({ ok: true });
+      case 'logout': if (d.token) CacheService.getScriptCache().removeAll(['s_' + d.token, 'ro_' + d.token]); return json_({ ok: true });
       case 'crm': return json_(webhookCrm_(d));
       default: return json_({ ok: false, error: 'Hành động không hợp lệ' });
     }
@@ -200,8 +202,14 @@ function withAuth_(d, fn) {
   const cache = CacheService.getScriptCache();
   const email = d.token ? cache.get('s_' + d.token) : null;
   if (!email) return { ok: false, auth: false, error: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' };
-  cache.put('s_' + d.token, email, 21600);
+  if (!cache.get('ro_' + d.token)) cache.put('s_' + d.token, email, 21600);
   return fn(email);
+}
+// Admin dang xem Portal cua partner (link tu cot "Xem Portal"): chi xem, khong duoc ghi
+function chiXem_(d) { return !!(d.token && CacheService.getScriptCache().get('ro_' + d.token)); }
+function chanGhi_(d, fn) {
+  if (chiXem_(d)) return { ok: false, error: 'Bạn đang xem Portal với quyền admin (chỉ xem), không thể thay đổi dữ liệu của partner.' };
+  return withAuth_(d, fn);
 }
 
 /* ---------- 1) Dang ky Partner ---------- */
@@ -714,11 +722,25 @@ function xuLyChinhSua(e) {
     for (let col = c0; col <= c1; col++) {
       const h = Object.keys(c).find(k => c[k] === col);
       if (name === SHEET_PARTNER && h === 'Trạng thái duyệt') xuLyDuyetPartner_(sh, r, c);
+      if (name === SHEET_PARTNER && h === 'Xem Portal' && sh.getRange(r, col).getValue() === true) taoLinkXemPortal_(sh, r, c);
       if (name === SHEET_PARTNER && (h === 'Chương trình' || h === 'Ngày bắt đầu kỳ')) tinhTongHopPartner_(String(sh.getRange(r, c['Email']).getValue()).trim().toLowerCase(), false);
       if (name === SHEET_LEAD && ['Kiểm tra lead', 'BC phụ trách', '% hoa hồng'].includes(h)) xuLyKiemTraLead_(sh, r, c);
       if (name === SHEET_LEAD && h === 'Giai đoạn') xuLyGiaiDoan_(sh, r, c);
     }
   }
+}
+
+// Tick o "Xem Portal" -> tao link xem Portal cua partner do (chi xem, het han sau 30 phut)
+function taoLinkXemPortal_(sh, r, c) {
+  const email = String(sh.getRange(r, c['Email']).getValue()).trim().toLowerCase();
+  const st = sh.getRange(r, c['Trạng thái duyệt']).getValue();
+  sh.getRange(r, c['Xem Portal']).setValue(false);
+  const o = sh.getRange(r, c['Link xem Portal']);
+  if (!email || st !== 'Đã duyệt') { o.setValue('Chỉ xem được partner đã duyệt'); return; }
+  const token = 'v' + (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  CacheService.getScriptCache().putAll({ ['s_' + token]: email, ['ro_' + token]: '1' }, 1800);
+  const het = Utilities.formatDate(new Date(Date.now() + 1800000), 'Asia/Ho_Chi_Minh', 'HH:mm dd/MM');
+  o.setValue(CONFIG.PORTAL_URL + '#xem=' + token).setNote('Chỉ xem, hết hạn lúc ' + het + '. Tick lại ô Xem Portal để tạo link mới.');
 }
 
 function xuLyDuyetPartner_(sh, r, c) {

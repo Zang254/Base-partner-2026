@@ -19,6 +19,7 @@ h1,h2,h3,p{margin:0}
 a{color:var(--blue)}
 button,input,select,textarea{font:inherit}
 .hidden{display:none!important}
+.viewbar{background:#FEF3C7;color:#92400E;border-bottom:1px solid #FCD34D;padding:10px 16px;font-size:14px;text-align:center}
 :focus-visible{outline:3px solid #7EA2FF;outline-offset:2px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 22px;border:0;border-radius:999px;background:var(--g-base);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -10px rgba(31,98,232,.7);transition:filter .2s}
 .btn:hover{filter:brightness(1.07)}
@@ -239,6 +240,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 
 <!-- ============ PORTAL ============ -->
 <div id="v-app" class="hidden">
+  <div id="viewBar" class="viewbar hidden" role="status"></div>
   <header class="top">
     <div class="top-in">
       <div class="top-row">
@@ -388,7 +390,10 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   var $ = function(id){ return document.getElementById(id); };
   document.querySelectorAll('.logo-img').forEach(function(i){ i.src = LOGO; });
   var store = { get:function(k){ try{return localStorage.getItem(k);}catch(e){return null;} }, set:function(k,v){ try{localStorage.setItem(k,v);}catch(e){} }, del:function(k){ try{localStorage.removeItem(k);}catch(e){} } };
-  var state = { token: store.get('bp_token'), tempPw: '' };
+  var state = { token: store.get('bp_token'), tempPw: '', viewOnly: false };
+  // Link admin xem Portal cua partner: portal.html#xem=TOKEN (khong luu vao trinh duyet)
+  var xemM = /^#xem=([A-Za-z0-9]+)$/.exec(location.hash);
+  if (xemM){ state.token = xemM[1]; state.viewOnly = true; if (history.replaceState) history.replaceState(null, '', location.pathname); }
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function msg(id, text, type){ $(id).innerHTML = text ? '<div class="msg '+(type||'err')+'" role="alert">'+esc(text)+'</div>' : ''; }
@@ -434,7 +439,8 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 
   function logout(expired){
     if (state.token && !expired) api('logout').catch(function(){});
-    state.token = null; store.del('bp_token');
+    if (!state.viewOnly) store.del('bp_token');
+    state.token = null; state.viewOnly = false; $('viewBar').classList.add('hidden');
     $('v-app').classList.add('hidden'); $('forceModal').classList.add('hidden'); $('v-login').classList.remove('hidden');
     if (expired) msg('loginMsg', 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
   }
@@ -444,6 +450,10 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   var profile = {};
   function enterApp(p, mustChange){
     profile = p || {};
+    if (state.viewOnly){
+      $('viewBar').innerHTML = 'Bạn đang xem Portal của <b>' + esc(profile['Họ và tên'] || '') + '</b> (' + esc(profile['Email'] || '') + ') với quyền admin, chỉ xem. Link hết hạn sau 30 phút.';
+      $('viewBar').classList.remove('hidden'); mustChange = false;
+    }
     $('v-login').classList.add('hidden'); $('v-app').classList.remove('hidden');
     $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = profile['Mã partner'] ? 'Mã Partner ' + profile['Mã partner'] : '';
     fillProfile(); prefillPid();
@@ -627,7 +637,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 
   /* ---------- Khoi dong ---------- */
   if (state.token){
-    api('me').then(function(r){ if (r.ok) enterApp(r.profile, false); else logout(true); }).catch(function(){ logout(true); });
+    api('me').then(function(r){ if (r.ok){ if (r.viewOnly) state.viewOnly = true; enterApp(r.profile, false); } else logout(true); }).catch(function(){ logout(true); });
   }
 })();
 </script>

@@ -161,6 +161,16 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 @media(max-width:900px){.prof{grid-template-columns:1fr}}
 .idcard{background:var(--g-aurora);color:#fff;border-radius:18px;padding:24px}
 .idcard small{color:#DCE8FF}
+.avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18) center/cover no-repeat;border:2px solid rgba(255,255,255,.5);margin-bottom:14px}
+.avatar:not(.has){display:none}
+.up-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.up-grid{grid-template-columns:1fr}}
+.up{display:flex;flex-direction:column;gap:8px;align-items:flex-start;border:1.5px dashed #C7D2E3;border-radius:12px;padding:14px;cursor:pointer}
+.up:hover{border-color:var(--blue)}
+.up:focus-within{outline:2px solid var(--blue);outline-offset:2px}
+.up-st{font-size:13px;color:#64748B}
+.up.done{border-style:solid;border-color:#86EFAC;background:#F0FDF4}
+.up.done .up-st{color:#15803D}
 .idcard .code{font-size:30px;font-weight:800;letter-spacing:.02em;margin:4px 0 16px}
 .idcard dl{margin:0;display:grid;gap:10px}
 .idcard dt{font-size:12.5px;color:#DCE8FF}
@@ -320,6 +330,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       <p class="lead-in">Bổ sung thông tin cá nhân và tài khoản ngân hàng để Base lập hợp đồng và chi trả hoa hồng.</p>
       <div class="prof">
         <div class="idcard">
+          <div class="avatar" id="mAvatar" aria-hidden="true"></div>
           <small>Mã Partner</small>
           <div class="code" id="mCode">–</div>
           <dl>
@@ -349,6 +360,16 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
               </div>
               <div class="pf-act"><button class="btn" id="pfBtn" type="submit">Lưu thông tin</button><small id="pfSaved"></small></div>
             </form>
+          </div>
+          <div class="card pf sec">
+            <h3>Ảnh giấy tờ</h3>
+            <p class="note">Ảnh CCCD dùng để xác minh danh tính, lập hợp đồng và chứng từ chi trả hoa hồng. Ảnh được lưu riêng tư, chỉ đội ngũ Phát triển Đối tác của Base xem được. Chọn ảnh JPG hoặc PNG, chụp rõ nét, đủ 4 góc.</p>
+            <div id="upMsg"></div>
+            <div class="up-grid">
+              <label class="up" data-loai="cccd_truoc"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt trước</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
+              <label class="up" data-loai="cccd_sau"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt sau</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
+              <label class="up" data-loai="chan_dung"><input type="file" accept="image/jpeg,image/png" hidden><b>Ảnh cá nhân</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
+            </div>
           </div>
           <div class="card pf sec">
             <h3>Đổi mật khẩu</h3>
@@ -600,6 +621,9 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
     $('mUpdated').textContent = profile['Cập nhật hồ sơ'] || 'Chưa cập nhật';
+    var anh = profile.anh || {};
+    document.querySelectorAll('.up').forEach(function(el){ var ok = !!anh[el.dataset.loai]; el.classList.toggle('done', ok); el.querySelector('.up-st').textContent = ok ? 'Đã tải lên' : 'Chưa tải lên'; el.querySelector('.btn').textContent = ok ? 'Đổi ảnh' : 'Chọn ảnh'; });
+    if (anh.chan_dung && !loaded.photo){ loaded.photo = true; api('myPhoto').then(function(r){ if (r.ok && r.data){ $('mAvatar').style.backgroundImage = 'url(' + r.data + ')'; $('mAvatar').classList.add('has'); } }).catch(function(){}); }
     $('mProgram').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
     $('pfForm').querySelectorAll('.inp').forEach(function(el){
       var v = profile[el.name] || '';
@@ -607,6 +631,38 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       el.value = v;
     });
   }
+  /* ---------- Tai anh ---------- */
+  function nenAnh(file, maxPx){
+    return new Promise(function(ok, fail){
+      if (!/^image\/(jpeg|png)$/.test(file.type)) return fail(new Error('Vui lòng chọn ảnh JPG hoặc PNG.'));
+      if (file.size > 15 * 1024 * 1024) return fail(new Error('Ảnh quá lớn, vui lòng chọn ảnh dưới 15MB.'));
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function(){
+        var k = Math.min(1, maxPx / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+        var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url); ok(cv.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); fail(new Error('Không đọc được ảnh này, vui lòng chọn ảnh khác.')); };
+      img.src = url;
+    });
+  }
+  document.querySelectorAll('.up input').forEach(function(inp){
+    inp.addEventListener('change', function(){
+      var box = inp.closest('.up'), loai = box.dataset.loai, f = inp.files && inp.files[0]; inp.value = '';
+      if (!f) return; msg('upMsg');
+      var st = box.querySelector('.up-st'); st.textContent = 'Đang tải lên...';
+      nenAnh(f, loai === 'chan_dung' ? 800 : 1600).then(function(data){
+        return api('uploadAnh', { loai: loai, data: data }).then(function(r){
+          if (!r.ok) throw new Error(r.error || 'Tải ảnh không thành công.');
+          profile = r.profile || profile;
+          if (loai === 'chan_dung'){ $('mAvatar').style.backgroundImage = 'url(' + data + ')'; $('mAvatar').classList.add('has'); loaded.photo = true; }
+          fillProfile(); msg('upMsg', 'Đã tải ảnh lên.', 'ok');
+        });
+      }).catch(function(err){ fillProfile(); msg('upMsg', err.message); });
+    });
+  });
+
   $('pfForm').addEventListener('submit', function(e){
     e.preventDefault(); msg('pfMsg'); var data = {};
     $('pfForm').querySelectorAll('.inp').forEach(function(el){ data[el.name] = el.value.trim(); });

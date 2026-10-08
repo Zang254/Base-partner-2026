@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-08-xemportal2'
+const CODE_VERSION = '2026-10-08-anh'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -85,7 +85,7 @@ const PARTNER_HEADERS = ['Thời gian', 'Họ và tên', 'Email', 'Số điện 
   'Tổng doanh thu', 'Tổng hoa hồng', 'Hoa hồng đã chi', 'Ghi chú gửi partner', 'Ghi chú nội bộ',
   'Xem Portal', 'Link xem Portal',
   'Ngày sinh', 'Địa chỉ thường trú', 'Địa chỉ tạm trú', 'Số CMND/CCCD', 'MST cá nhân',
-  'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản', 'Cập nhật hồ sơ',
+  'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản', 'Ảnh CCCD mặt trước', 'Ảnh CCCD mặt sau', 'Ảnh cá nhân', 'Cập nhật hồ sơ',
   'Mật khẩu (mã hóa)', 'Salt', 'Phải đổi mật khẩu', 'Đăng nhập lần cuối'];
 
 const LEAD_HEADERS = ['Mã lead', 'Thời gian', 'Mã partner', 'Partner ID (Base)', 'Email partner', 'Tên partner',
@@ -178,6 +178,8 @@ function doPost(e) {
       case 'me': return json_(withAuth_(d, email => ({ ok: true, profile: hoSo_(email), viewOnly: chiXem_(d) })));
       case 'saveProfile': return json_(chanGhi_(d, email => luuHoSo_(email, d.profile || {})));
       case 'changePassword': return json_(chanGhi_(d, email => doiMatKhau_(email, d.oldPassword, d.newPassword)));
+      case 'uploadAnh': return json_(chanGhi_(d, email => taiAnh_(email, d.loai, d.data)));
+      case 'myPhoto': return json_(withAuth_(d, email => anhCaNhan_(email)));
       case 'resources': return json_(withAuth_(d, () => ({ ok: true, items: taiNguyen_() })));
       case 'submitLead': return json_(chanGhi_(d, email => guiLead_(email, d.lead || {})));
       case 'myDeals': return json_(withAuth_(d, email => ({ ok: true, deals: dealCuaToi_(email), tongQuan: tongQuanChoPortal_(email) })));
@@ -326,7 +328,42 @@ function hoSo_(email) {
   const p = timPartner_(email); if (!p) return {};
   const o = {};
   PROFILE_VIEW.forEach(k => o[k] = p[k] instanceof Date ? Utilities.formatDate(p[k], 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm') : String(p[k] === undefined ? '' : p[k]));
+  o.anh = {}; Object.keys(ANH).forEach(k => o.anh[k] = !!p[ANH[k]]);   // chi bao da co anh hay chua, khong lo link Drive
   return o;
+}
+
+/* ---------- 3b) Anh CCCD / anh ca nhan -> thu muc Drive (Script Property DRIVE_FOLDER_ID) ---------- */
+const ANH = { cccd_truoc: 'Ảnh CCCD mặt trước', cccd_sau: 'Ảnh CCCD mặt sau', chan_dung: 'Ảnh cá nhân' };
+function idTuLink_(u) { const m = /[-\w]{25,}/.exec(String(u || '')); return m ? m[0] : ''; }
+function taiAnh_(email, loai, data) {
+  if (!ANH[loai]) return { ok: false, error: 'Loại ảnh không hợp lệ.' };
+  const folderId = PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID');
+  if (!folderId) return { ok: false, error: 'Base chưa cấu hình nơi lưu ảnh. Vui lòng liên hệ ' + CONFIG.HOTLINE + '.' };
+  const m = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+\/=]+)$/.exec(String(data || ''));
+  if (!m) return { ok: false, error: 'Vui lòng chọn ảnh định dạng JPG hoặc PNG.' };
+  if (m[2].length > 7000000) return { ok: false, error: 'Ảnh quá lớn (tối đa khoảng 5MB).' };
+  const sh = sheet_(SHEET_PARTNER), c = cot_(sh), r = timDongPartner_(email);
+  if (!r || !c[ANH[loai]]) return { ok: false, error: 'Không tìm thấy hồ sơ. Vui lòng liên hệ Base.' };
+  const p = docDong_(sh, r, c), ma = p['Mã partner'] || email;
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const goc = DriveApp.getFolderById(folderId), ten = ma + ' - ' + p['Họ và tên'];
+    const it = goc.getFoldersByName(ten), thuMuc = it.hasNext() ? it.next() : goc.createFolder(ten);
+    const cu = idTuLink_(p[ANH[loai]]);
+    if (cu) { try { DriveApp.getFileById(cu).setTrashed(true); } catch (e) {} }
+    const tg = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd-HHmm');
+    const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), 'image/' + m[1], ma + '_' + loai + '_' + tg + (m[1] === 'png' ? '.png' : '.jpg'));
+    const f = thuMuc.createFile(blob);
+    sh.getRange(r, c[ANH[loai]]).setValue(f.getUrl());
+    sh.getRange(r, c['Cập nhật hồ sơ']).setValue(new Date());
+  } finally { lock.releaseLock(); }
+  return { ok: true, profile: hoSo_(email) };
+}
+function anhCaNhan_(email) {
+  const p = timPartner_(email), id = p ? idTuLink_(p[ANH.chan_dung]) : '';
+  if (!id) return { ok: true, data: '' };
+  try { const b = DriveApp.getFileById(id).getBlob(); return { ok: true, data: 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) }; }
+  catch (e) { return { ok: true, data: '' }; }
 }
 
 function luuHoSo_(email, prof) {

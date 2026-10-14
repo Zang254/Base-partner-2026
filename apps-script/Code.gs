@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-08-anh'
+const CODE_VERSION = '2026-10-14-fixdong'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -152,7 +152,7 @@ function caiDat() {
   dropdown_(sheet_(SHEET_REV), 'Trạng thái chi trả', PAY_STATUS);
   dropdown_(sheet_(SHEET_REV), 'Loại doanh thu', Object.keys(LOAI_DT).map(k => LOAI_DT[k]));
   ['Mật khẩu (mã hóa)', 'Salt'].forEach(h => { const c = cot_(p)[h]; if (c) p.hideColumns(c); });
-  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).insertCheckboxes(); }
+  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build()); }
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('xuLyChinhSua').forSpreadsheet(ss).onEdit().create();
@@ -771,7 +771,7 @@ function xuLyChinhSua(e) {
 function taoLinkXemPortal_(sh, r, c) {
   const email = String(sh.getRange(r, c['Email']).getValue()).trim().toLowerCase();
   const st = sh.getRange(r, c['Trạng thái duyệt']).getValue();
-  sh.getRange(r, c['Xem Portal']).setValue(false);
+  sh.getRange(r, c['Xem Portal']).setValue('');
   const o = sh.getRange(r, c['Link xem Portal']);
   if (!email || st !== 'Đã duyệt') { o.setValue('Chỉ xem được partner đã duyệt'); return; }
   const token = 'v' + (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
@@ -957,10 +957,14 @@ function ss_() { return SS_CACHE_ || (SS_CACHE_ = CONFIG.SHEET_ID ? SpreadsheetA
 function sheet_(name) { return ss_().getSheetByName(name); }
 function cot_(sh) { const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]; const m = {}; h.forEach((v, i) => { if (v) m[v] = i + 1; }); return m; }
 function docDong_(sh, r, c) { const v = sh.getRange(r, 1, 1, sh.getLastColumn()).getValues()[0]; const o = {}; Object.keys(c).forEach(k => o[k] = v[c[k] - 1]); return o; }
+// Ghi vao dong ngay sau dong cuoi co du lieu that (bo qua o tick trong). Khong dung appendRow vi o tick lam lech dong cuoi.
 function ghiDong_(sh, obj) {
   const c = cot_(sh), arr = new Array(sh.getLastColumn()).fill('');
   Object.keys(obj).forEach(k => { if (c[k]) arr[c[k] - 1] = obj[k]; });
-  sh.appendRow(arr);
+  const n = Math.max(sh.getLastRow(), 1), all = sh.getRange(1, 1, n, sh.getLastColumn()).getValues();
+  let r = n; while (r > 1 && !all[r - 1].some(x => x !== '' && x !== false)) r--;
+  if (r + 1 > sh.getMaxRows()) sh.insertRowsAfter(sh.getMaxRows(), 50);
+  sh.getRange(r + 1, 1, 1, arr.length).setValues([arr]);
 }
 function bang_(obj) {
   return '<table style="border-collapse:collapse;font-size:14px">' + Object.keys(obj).map(k =>
@@ -1009,7 +1013,7 @@ function dungLaiSheet_(name, headers, giuDuLieu) {
     const c = cot_(sh), data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
     const extra = Object.keys(c).filter(h => headers.indexOf(h) < 0);   // cot tu them: dua ve cuoi, khong mat
     headers = headers.concat(extra);
-    rows = data.filter(v => v.some(x => x !== '')).map(v => headers.map(h => c[h] ? v[c[h] - 1] : ''));
+    rows = data.filter(v => v.some(x => x !== '' && x !== false)).map(v => headers.map(h => c[h] ? v[c[h] - 1] : ''));
   }
   sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
   sh.showColumns(1, Math.max(sh.getMaxColumns(), 1));
@@ -1030,7 +1034,7 @@ function caiDinhDang_() {
   dropdown_(sheet_(SHEET_REV), 'Trạng thái chi trả', PAY_STATUS);
   dropdown_(sheet_(SHEET_REV), 'Loại doanh thu', Object.keys(LOAI_DT).map(k => LOAI_DT[k]));
   ['Mật khẩu (mã hóa)', 'Salt'].forEach(h => { const c = cot_(p)[h]; if (c) p.hideColumns(c); });
-  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).insertCheckboxes(); }
+  { const c = cot_(p)['Xem Portal']; if (c) p.getRange(2, c, 2000, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build()); }
   ['MST khách hàng', 'SĐT khách hàng'].forEach(h => { const c = cot_(l)[h]; if (c) l.getRange(2, c, 2000, 1).setNumberFormat('@'); });
 }
 

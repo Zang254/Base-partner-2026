@@ -19,6 +19,12 @@ h1,h2,h3,p{margin:0}
 a{color:var(--blue)}
 button,input,select,textarea{font:inherit}
 .hidden{display:none!important}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#EEF3FB;border-radius:12px;padding:4px;margin:18px 0 6px}
+.seg button{border:0;background:none;padding:9px 8px;border-radius:9px;font:inherit;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-selected=true]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(15,23,42,.12)}
+.auth-card .req{color:#E11D48}.auth-card .opt{color:var(--muted);font-weight:400;font-size:13px}
+.auth-card textarea.inp{resize:vertical;min-height:80px;padding-top:12px}
+.remember{align-items:flex-start}.remember input{margin-top:2px;flex:none}
 .code-inp{font-size:19px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center}
 .code-inp::placeholder{font-weight:500;letter-spacing:.06em}
 .remember{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:2px 0 16px;cursor:pointer}
@@ -242,18 +248,40 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 <section class="auth" id="v-login">
   <div class="auth-card">
     <div class="brand"><img src="" alt="" class="logo-img">BASE.VN <span>Partner Portal</span></div>
+    <div class="seg" role="tablist">
+      <button type="button" role="tab" id="segIn" aria-selected="true">Đã có mã partner</button>
+      <button type="button" role="tab" id="segReg" aria-selected="false">Đăng ký Partner</button>
+    </div>
     <div id="loginBox">
       <h1>Truy cập Partner Portal</h1>
-      <p class="sub">Nhập Partner ID Base đã cấp cho bạn để xem thông tin, chính sách, tình trạng deal và đăng ký lead.</p>
+      <p class="sub">Nhập mã partner Base đã cấp để xem thông tin, chính sách, tình trạng deal và đăng ký lead.</p>
       <div id="loginMsg"></div>
       <form id="loginForm" novalidate>
-        <div class="field"><label for="lgCode">Partner ID</label><input class="inp code-inp" id="lgCode" placeholder="BP-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required></div>
+        <div class="field"><label for="lgCode">Mã partner</label><input class="inp code-inp" id="lgCode" placeholder="VD: AF992NTNA001" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="30" required></div>
         <label class="remember"><input type="checkbox" id="lgRemember" checked> Ghi nhớ trên thiết bị này</label>
         <button class="btn" style="width:100%" id="lgBtn" type="submit">Truy cập</button>
       </form>
-      <p class="hint">Chưa có hoặc quên Partner ID? Gọi hotline <a href="tel:0943860401">0943 860 401</a>.</p>
+      <p class="hint">Quên mã partner? Gọi hotline <a href="tel:0943860401">0943 860 401</a>.</p>
     </div>
-    <p class="auth-foot">Chưa là Partner? <a href="./#bp-dang-ky">Đăng ký làm Partner</a></p>
+    <div id="regBox" class="hidden">
+      <h1>Đăng ký Partner</h1>
+      <p class="sub">Base xác minh hồ sơ trong 24–48 giờ làm việc và gửi mã partner qua email.</p>
+      <div id="regMsg"></div>
+      <form id="regForm" novalidate>
+        <div class="field"><label for="r1">Họ và tên <span class="req">*</span></label><input class="inp" id="r1" name="Họ và tên" autocomplete="name" required></div>
+        <div class="field"><label for="r2">Email <span class="req">*</span></label><input class="inp" id="r2" name="Email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="r3">Số điện thoại <span class="req">*</span></label><input class="inp" id="r3" name="Số điện thoại" type="tel" inputmode="tel" autocomplete="tel" required></div>
+        <div class="field"><label for="r4">Tỉnh/Thành phố <span class="req">*</span></label><select class="inp" id="r4" name="Khu vực" required><option value="">Lựa chọn khu vực</option><option>Khu vực miền Bắc - VN</option><option>Khu vực miền Trung - VN</option><option>Khu vực miền Nam - VN</option></select></div>
+        <div class="field"><label for="r5">Công ty / thương hiệu <span class="req">*</span></label><input class="inp" id="r5" name="Tên công ty" autocomplete="organization" placeholder="Cá nhân: ghi tên của bạn" required></div>
+        <div class="field"><label for="r6">Vị trí công việc <span class="req">*</span></label><select class="inp" id="r6" name="Vị trí công việc" required><option value="">Chọn vị trí</option><option>Chủ doanh nghiệp / Giám đốc</option><option>Quản lý cấp cao</option><option>Trưởng phòng / Quản lý</option><option>Chuyên viên / Nhân viên</option><option>Tư vấn độc lập / Freelancer</option><option>Khác</option></select></div>
+        <div class="field"><label for="r7">Website hoặc trang cá nhân <span class="opt">(nếu có)</span></label><input class="inp" id="r7" name="Website công ty" placeholder="congty.vn, LinkedIn hoặc Facebook"></div>
+        <div class="field"><label for="r8">Mã số thuế <span class="opt">(không bắt buộc)</span></label><input class="inp" id="r8" name="Mã số thuế" inputmode="numeric"></div>
+        <div class="field"><label for="r9">Bạn kỳ vọng gì khi hợp tác với Base? <span class="opt">(không bắt buộc)</span></label><textarea class="inp" id="r9" name="Kỳ vọng hợp tác" rows="3"></textarea></div>
+        <label class="remember"><input type="checkbox" id="rAgree"> Tôi đồng ý để Base liên hệ và lưu thông tin phục vụ xét duyệt Partner.</label>
+        <input name="botcheck" class="hidden" tabindex="-1" autocomplete="off">
+        <button class="btn" style="width:100%" id="regBtn" type="submit">Gửi đăng ký</button>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -338,7 +366,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       <p class="lead-in">Thông tin Partner và chính sách hoa hồng đang áp dụng cho bạn.</p>
       <div class="prof">
         <div class="idcard">
-          <small>Partner ID</small>
+          <small>Mã partner</small>
           <div class="code" id="mCode" style="font-size:22px">–</div>
           <dl>
             <div><dt>Họ và tên</dt><dd id="mName"></dd></div>
@@ -397,21 +425,14 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   }
 
   /* ---------- Nhap Partner ID ---------- */
-  function dinhDangMa(v){
-    var x = String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    if (x.length > 12 && x.indexOf('BP') === 0) x = x.slice(2);
-    x = x.slice(0, 12);
-    var g = x.match(/.{1,4}/g) || [];
-    return g.length ? 'BP-' + g.join('-') : '';
-  }
+  function dinhDangMa(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   $('lgCode').addEventListener('input', function(e){ var el = e.target, p = el.selectionStart; el.value = el.value.toUpperCase(); try { el.setSelectionRange(p, p); } catch (_) {} });
-  $('lgCode').addEventListener('blur', function(e){ if (e.target.value) e.target.value = dinhDangMa(e.target.value); });
   function vao(code, auto){
     if (state.entering) return; state.entering = true;
     var btn = $('lgBtn'); busy(btn, true, 'Đang kiểm tra...');
     return api('enter', { code: code }).then(function(r){
       busy(btn, false); state.entering = false;
-      if (!r.ok){ if (auto) store.del('bp_code'); return msg('loginMsg', r.error || 'Partner ID không đúng.'); }
+      if (!r.ok){ if (auto) store.del('bp_code'); return msg('loginMsg', r.error || 'Mã partner không đúng.'); }
       state.token = r.token; store.set('bp_token', r.token);
       if (auto || $('lgRemember').checked) store.set('bp_code', code); else store.del('bp_code');
       $('lgCode').value = '';
@@ -421,8 +442,31 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   $('loginForm').addEventListener('submit', function(e){
     e.preventDefault(); msg('loginMsg');
     var code = dinhDangMa($('lgCode').value);
-    if (code.replace(/-/g,'').length !== 14) return msg('loginMsg', 'Partner ID gồm 12 ký tự sau "BP-", ví dụ BP-AB12-CD34-EF56.');
+    if (code.length < 8) return msg('loginMsg', 'Vui lòng nhập đúng mã partner, ví dụ AF992NTNA001.');
     vao(code, false);
+  });
+
+  /* ---------- Dang ky Partner ---------- */
+  function cheDo(reg){
+    $('segIn').setAttribute('aria-selected', reg ? 'false' : 'true'); $('segReg').setAttribute('aria-selected', reg ? 'true' : 'false');
+    $('loginBox').classList.toggle('hidden', reg); $('regBox').classList.toggle('hidden', !reg);
+  }
+  $('segIn').onclick = function(){ cheDo(false); }; $('segReg').onclick = function(){ cheDo(true); };
+  if (/^#dang-?ky/.test(location.hash)) cheDo(true);
+  $('regForm').addEventListener('submit', function(e){
+    e.preventDefault(); msg('regMsg'); var f = $('regForm'), data = {};
+    f.querySelectorAll('[name]').forEach(function(el){ data[el.name] = el.value.trim(); });
+    var thieu = ['Họ và tên','Email','Số điện thoại','Khu vực','Tên công ty','Vị trí công việc'].filter(function(k){ return !data[k]; });
+    if (thieu.length) return msg('regMsg', 'Vui lòng điền: ' + thieu.join(', ') + '.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data['Email'])) return msg('regMsg', 'Email chưa hợp lệ.');
+    if (data['Số điện thoại'].replace(/\D/g,'').length < 9) return msg('regMsg', 'Số điện thoại chưa hợp lệ.');
+    if (!$('rAgree').checked) return msg('regMsg', 'Bạn cần đồng ý để Base liên hệ và xét duyệt.');
+    var btn = $('regBtn'); busy(btn, true, 'Đang gửi...');
+    api('register', data).then(function(r){
+      busy(btn, false);
+      if (!r.ok) return msg('regMsg', r.error || 'Gửi đăng ký không thành công.');
+      f.reset(); msg('regMsg', 'Base đã nhận đăng ký của bạn. Mã partner sẽ được gửi qua email sau khi hồ sơ được duyệt (24–48 giờ làm việc).', 'ok');
+    }).catch(function(err){ busy(btn, false); msg('regMsg', err.message); });
   });
 
   function logout(expired){
@@ -431,7 +475,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     state.token = null; state.viewOnly = false; $('viewBar').classList.add('hidden');
     $('v-app').classList.add('hidden'); $('v-login').classList.remove('hidden');
     if (expired && !state.viewOnly && store.get('bp_code')){ vao(store.get('bp_code'), true); return; }
-    if (expired) msg('loginMsg', 'Phiên truy cập đã hết hạn, vui lòng nhập lại Partner ID.');
+    if (expired) msg('loginMsg', 'Phiên truy cập đã hết hạn, vui lòng nhập lại mã partner.');
   }
   $('logoutBtn').onclick = function(){ logout(false); };
 
@@ -444,7 +488,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       $('viewBar').classList.remove('hidden'); mustChange = false;
     }
     $('v-login').classList.add('hidden'); $('v-app').classList.remove('hidden');
-    $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' : 'Affiliate Partner';
+    $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = tenCT();
     fillProfile(); prefillPid();
     showTab(location.hash.replace('#','') || 'deals');
   }
@@ -587,6 +631,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   var AFF = [['Khách hàng mới', 15, 10], ['Khách hàng tái kích hoạt', 7, 5], ['Khách hàng đang được Base chăm sóc', 0, 0]];
   var CAP = [['Ambassador','Dưới 100 triệu',18,2,10],['Silver','100 – 500 triệu',20,4,15],['Gold','500 triệu – 1,5 tỷ',25,6,15],['Platinum','1,5 – 3 tỷ',30,8,20],['Diamond','Từ 3 tỷ',35,10,20]];
   function laConsulting(){ return String(profile['Chương trình']||'').toLowerCase() === 'consulting'; }
+  function tenCT(){ var c = String(profile['Chương trình']||'Affiliate').trim(); return c === 'Đại lý' ? 'Đại lý Base' : (c || 'Affiliate') + ' Partner'; }
   function renderPolicy(){
     var h;
     if (laConsulting()){
@@ -595,6 +640,9 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
         '<table class="pol"><thead><tr><th>Cấp</th><th>Tích luỹ 12 tháng</th><th>Bán mới, up/cross trong 9 tháng</th><th>Gia hạn, up/cross sau 9 tháng</th><th>Dịch vụ</th></tr></thead><tbody>' +
         CAP.map(function(c){ return '<tr class="' + (c[0] === cur ? 'on' : '') + '"><td><b>' + c[0] + '</b></td><td>' + c[1] + '</td><td class="n">' + c[2] + '%</td><td class="n">' + c[3] + '%</td><td class="n">' + c[4] + '%</td></tr>'; }).join('') +
         '</tbody></table><p class="pol-note">Doanh thu triển khai được tính vào tích luỹ, không tính hoa hồng. Khi lên cấp, mức mới áp dụng cho các khoản phát sinh sau đó.</p>';
+    } else if (/^(solution|đại lý)$/i.test(String(profile['Chương trình']||'').trim())){
+      h = '<p class="note">Chương trình <b>' + esc(tenCT()) + '</b>. Chính sách hoa hồng áp dụng theo thoả thuận hợp tác đã ký với Base. Mức hoa hồng của từng lead hiển thị ở mục Deal của tôi.</p>' +
+        '<p class="pol-note">Chi tiết hoa hồng được gửi trong Biên bản đối soát trước ngày 15 tháng sau. Cần trao đổi về chính sách, vui lòng liên hệ đội ngũ Partner của Base.</p>';
     } else {
       h = '<p class="note">Chương trình <b>Affiliate Partner</b>. Mức hoa hồng căn cứ trạng thái khách hàng trên Base CRM tại thời điểm đăng ký lead; mức áp dụng cho từng lead hiển thị ở mục Deal của tôi.</p>' +
         '<table class="pol"><thead><tr><th>Trạng thái khách hàng</th><th>Ký mới</th><th>Up/cross, dịch vụ trong 6 tháng</th></tr></thead><tbody>' +
@@ -606,7 +654,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   function fillProfile(){
     $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
-    $('mProgram').textContent = laConsulting() ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
+    $('mProgram').textContent = tenCT() + (laConsulting() && profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '');
     $('iPhone').textContent = profile['Số điện thoại'] || '–'; $('iPos').textContent = profile['Vị trí công việc'] || '–';
     $('iRegion').textContent = profile['Khu vực'] || '–'; $('iCompany').textContent = profile['Tên công ty'] || '–';
     renderPolicy();

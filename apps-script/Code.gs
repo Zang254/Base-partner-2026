@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-26-partnerid'
+const CODE_VERSION = '2026-10-26-mapartner'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -101,7 +101,8 @@ const SHEET_REV = 'Doanh thu';
 const REV_HEADERS = ['Thời gian ghi nhận', 'Mã lead', 'Email partner', 'Mã partner', 'Chương trình', 'Công ty khách hàng',
   'Loại doanh thu', 'Doanh thu (VNĐ)', 'Tính tích luỹ', 'Cấp bậc áp dụng', '% hoa hồng', 'Hoa hồng (VNĐ)',
   'Kỳ tích luỹ', 'Trạng thái chi trả', 'Ghi chú'];
-const PROGRAMS = ['Affiliate', 'Consulting'];
+const PROGRAMS = ['Affiliate', 'Consulting', 'Solution', 'Đại lý'];
+const VT_CT = { 'Affiliate': 'AF', 'Consulting': 'CS', 'Solution': 'SL', 'Đại lý': 'DL' };
 const PAY_STATUS = ['Chờ đối soát', 'Đã chi', 'Không chi'];
 
 const PARTNER_STATUS = ['Chờ duyệt', 'Đã duyệt', 'Từ chối'];
@@ -229,7 +230,7 @@ function dangKyPartner_(d) {
     'Quy mô nhân sự': g(['Quy mô nhân sự', 'quy_mo']),
     'Kỳ vọng hợp tác': g(['Kỳ vọng hợp tác', 'ky_vong']),
     'Trạng thái duyệt': 'Chờ duyệt',
-    'Chương trình': 'Affiliate',
+    'Chương trình': 'Affiliate',   // mac dinh; admin doi truoc khi duyet neu la Consulting / Solution / Dai ly
   };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row['Email'])) return { ok: false, error: 'Email không hợp lệ' };
   const cu = timPartner_(row['Email']);
@@ -778,20 +779,22 @@ function taoLinkXemPortal_(sh, r, c) {
   o.setValue(CONFIG.PORTAL_URL + '#xem=' + token).setNote('Chỉ xem, hết hạn lúc ' + het + '. Tick lại ô Xem Portal để tạo link mới.');
 }
 
-/* ---------- Partner ID: ma truy cap Portal, kho doan (BP-XXXX-XXXX-XXXX, 31^12 to hop) ---------- */
-const MA_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // bo 0/O, 1/I/L de khong nham
-function chuanMa_(v) { let m = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (m.length === 12) m = 'BP' + m; return m; }
-function laMaMoi_(v) { return /^BP[A-Z0-9]{12}$/.test(chuanMa_(v)); }
-function taoMaPartner_() {
-  const sh = sheet_(SHEET_PARTNER), c = cot_(sh);
+/* ---------- Ma partner: [viet tat CT][3 so cuoi SDT][chu cai dau ten][STT 001 dem chung], VD AF992NTNA001 ---------- */
+function chuanMa_(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function laMaHopLe_(v) { return /^(AF|CS|SL|DL)\d{3}[A-Z]+\d{3,}$/.test(chuanMa_(v)); }
+function boDau_(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D'); }
+function taoMaPartner_(p) {
+  const ct = PROGRAMS.find(x => x.toLowerCase() === String(p['Chương trình'] || '').trim().toLowerCase()) || 'Affiliate';
+  const sdt = (String(p['Số điện thoại'] || '').replace(/\D/g, '') || '000').slice(-3).padStart(3, '0');
+  const ten = boDau_(p['Họ và tên']).toUpperCase().split(/[^A-Z]+/).filter(Boolean).map(w => w[0]).join('') || 'X';
+  const sh = sheet_(SHEET_PARTNER), c = cot_(sh), props = PropertiesService.getScriptProperties();
   const cu = sh.getLastRow() > 1 ? sh.getRange(2, c['Mã partner'], sh.getLastRow() - 1, 1).getValues().flat().map(chuanMa_) : [];
-  for (let t = 0; t < 20; t++) {
-    const b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Utilities.getUuid() + Date.now() + t);
-    let x = ''; for (let i = 0; i < 12; i++) x += MA_CHARS[((b[i] % 256) + 256) % 256 % MA_CHARS.length];
-    const ma = 'BP-' + x.slice(0, 4) + '-' + x.slice(4, 8) + '-' + x.slice(8, 12);
-    if (cu.indexOf(chuanMa_(ma)) < 0) return ma;
-  }
-  throw new Error('Không tạo được Partner ID');
+  let maxCu = 0; cu.forEach(m => { if (laMaHopLe_(m)) maxCu = Math.max(maxCu, Number(/(\d{3,})$/.exec(m)[1])); });
+  let n = Math.max(Number(props.getProperty('PARTNER_SEQ') || 0), maxCu);
+  let ma;
+  do { n++; ma = VT_CT[ct] + sdt + ten + String(n).padStart(3, '0'); } while (cu.indexOf(ma) >= 0);
+  props.setProperty('PARTNER_SEQ', String(n));
+  return ma;
 }
 function timPartnerTheoMa_(ma) {
   const sh = sheet_(SHEET_PARTNER); if (sh.getLastRow() < 2) return null;
@@ -803,10 +806,10 @@ function timPartnerTheoMa_(ma) {
 function vaoBangMa_(d) {
   const cache = CacheService.getScriptCache(), fails = Number(cache.get('ma_fail') || 0);
   if (fails >= 60) return { ok: false, error: 'Có quá nhiều lượt nhập sai. Vui lòng thử lại sau 15 phút.' };
-  const ma = chuanMa_(d.code), f = laMaMoi_(ma) ? timPartnerTheoMa_(ma) : null;
+  const ma = chuanMa_(d.code), f = laMaHopLe_(ma) ? timPartnerTheoMa_(ma) : null;
   if (!f || f.p['Trạng thái duyệt'] !== 'Đã duyệt' || !f.p['Email']) {
     cache.put('ma_fail', String(fails + 1), 900); Utilities.sleep(800);
-    return { ok: false, error: 'Partner ID không đúng hoặc chưa được kích hoạt. Vui lòng kiểm tra lại.' };
+    return { ok: false, error: 'Mã partner không đúng hoặc chưa được kích hoạt. Vui lòng kiểm tra lại.' };
   }
   const email = String(f.p['Email']).trim().toLowerCase();
   const token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
@@ -816,12 +819,12 @@ function vaoBangMa_(d) {
   return { ok: true, token: token, profile: hoSo_(email) };
 }
 function guiMaPartner_(p, ma) {
-  return guiEmail_('partnerid|' + ma, p['Email'], 'Partner ID của bạn tại Base Partner Portal',
+  return guiEmail_('partnerid|' + ma, p['Email'], 'Mã partner của bạn tại Base Partner Portal',
     `<p>Chào ${esc_(p['Họ và tên'])},</p>
-     <p>Chào mừng bạn đồng hành cùng Base.vn. Partner ID của bạn:</p>
+     <p>Hồ sơ của bạn đã được duyệt. Chào mừng bạn đồng hành cùng Base.vn trong chương trình <b>${esc_(p['Chương trình'] || 'Affiliate')}</b>. Mã partner của bạn:</p>
      <p style="font-size:22px;font-weight:800;letter-spacing:.06em;margin:14px 0">${ma}</p>
-     <p>Truy cập <a href="${CONFIG.PORTAL_URL}">Base Partner Portal</a> và nhập Partner ID để xem thông tin, chính sách, tình trạng các deal đã giới thiệu, tài nguyên và đăng ký lead mới. Không cần mật khẩu.</p>
-     <p style="color:#B45309">Partner ID là mã truy cập riêng của bạn, vui lòng không chia sẻ cho người khác.</p>
+     <p>Truy cập <a href="${CONFIG.PORTAL_URL}">Base Partner Portal</a> và nhập mã partner để xem thông tin, chính sách, tình trạng các deal đã giới thiệu, tài nguyên và đăng ký lead mới. Không cần mật khẩu.</p>
+     <p style="color:#B45309">Mã partner dùng để truy cập Portal, vui lòng không chia sẻ cho người khác.</p>
      ${p['Ghi chú gửi partner'] ? '<p>' + esc_(p['Ghi chú gửi partner']) + '</p>' : ''}
      <p>Cần hỗ trợ, vui lòng gọi ${CONFIG.HOTLINE}.</p>`);
 }
@@ -832,9 +835,9 @@ function xuLyDuyetPartner_(sh, r, c) {
     if (!p['Email']) { sh.getRange(r, c['Trạng thái duyệt']).setNote('Cần điền Email trước khi duyệt (dùng để gửi thông báo deal).'); return; }
     sh.getRange(r, c['Trạng thái duyệt']).clearNote();
     if (!p['Thời gian']) sh.getRange(r, c['Thời gian']).setValue(new Date());
-    if (!p['Chương trình']) sh.getRange(r, c['Chương trình']).setValue('Affiliate');
+    if (!p['Chương trình']) { p['Chương trình'] = 'Affiliate'; sh.getRange(r, c['Chương trình']).setValue('Affiliate'); }
     let ma = p['Mã partner'];
-    if (!laMaMoi_(ma)) { ma = taoMaPartner_(); sh.getRange(r, c['Mã partner']).setValue(ma); }
+    if (!laMaHopLe_(ma)) { ma = taoMaPartner_(p); sh.getRange(r, c['Mã partner']).setValue(ma); }
     guiMaPartner_(p, ma);
   } else if (p['Trạng thái duyệt'] === 'Từ chối') {
     guiEmail_('tuchoi|' + p['Email'], p['Email'], 'Kết quả đăng ký Base Affiliate Partner',
@@ -1120,15 +1123,15 @@ function xemNhiemVu() {
   Logger.log(JSON.stringify(docJob_(ID)));
 }
 // 3) Cap tai khoan cho cac partner da duyet truoc khi co ban v2
-// Cap Partner ID moi (BP-...) cho partner da duyet con dung ma cu (P0001...). Cap nhat ma o tab Lead va Doanh thu.
-// GUI_EMAIL = true: gui email Partner ID cho tung partner. false: chi tao ma, ban tu gui.
+// Cap ma partner theo cong thuc moi cho partner da duyet con dung ma cu (P0001, BP-...). Cap nhat ma o tab Lead va Doanh thu.
+// GUI_EMAIL = true: gui email ma partner cho tung partner. false: chi tao ma, ban tu gui.
 function capMaMoiChoPartnerCu() {
   const GUI_EMAIL = false;
   const sh = sheet_(SHEET_PARTNER), c = cot_(sh), doi = {}; const ds = [];
   for (let r = 2; r <= sh.getLastRow(); r++) {
     const p = docDong_(sh, r, c);
-    if (p['Trạng thái duyệt'] !== 'Đã duyệt' || laMaMoi_(p['Mã partner'])) continue;
-    const ma = taoMaPartner_(); sh.getRange(r, c['Mã partner']).setValue(ma);
+    if (p['Trạng thái duyệt'] !== 'Đã duyệt' || laMaHopLe_(p['Mã partner'])) continue;
+    const ma = taoMaPartner_(p); sh.getRange(r, c['Mã partner']).setValue(ma);
     if (p['Mã partner']) doi[String(p['Mã partner'])] = ma;
     ds.push((p['Họ và tên'] || p['Email']) + ': ' + ma);
     if (GUI_EMAIL && p['Email']) guiMaPartner_(p, ma);
@@ -1142,7 +1145,7 @@ function capMaMoiChoPartnerCu() {
     const pid = cot_(t)['Partner ID (Base)'];
     if (pid) { const r2 = t.getRange(2, pid, t.getLastRow() - 1, 1), v2 = r2.getValues(); v2.forEach(x => { if (doi[String(x[0])]) x[0] = doi[String(x[0])]; }); r2.setValues(v2); }
   });
-  thongBao_(ds.length ? 'Đã cấp Partner ID mới cho ' + ds.length + ' partner:\n\n' + ds.join('\n') : 'Không có partner nào cần cấp mã mới.');
+  thongBao_(ds.length ? 'Đã cấp mã partner mới cho ' + ds.length + ' partner:\n\n' + ds.join('\n') : 'Không có partner nào cần cấp mã mới.');
 }
 
 

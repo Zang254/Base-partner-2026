@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-14-fixdong'
+const CODE_VERSION = '2026-10-26-partnerid'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -173,13 +173,10 @@ function doPost(e) {
   try {
     switch (action) {
       case 'register': return json_(dangKyPartner_(d));
-      case 'login': return json_(dangNhap_(d));
-      case 'forgot': return json_(quenMatKhau_(d));
+      case 'enter': return json_(vaoBangMa_(d));
+      case 'login': case 'forgot': case 'saveProfile': case 'changePassword': case 'uploadAnh': case 'myPhoto':
+        return json_({ ok: false, error: 'Portal đã chuyển sang truy cập bằng Partner ID. Vui lòng tải lại trang.' });
       case 'me': return json_(withAuth_(d, email => ({ ok: true, profile: hoSo_(email), viewOnly: chiXem_(d) })));
-      case 'saveProfile': return json_(chanGhi_(d, email => luuHoSo_(email, d.profile || {})));
-      case 'changePassword': return json_(chanGhi_(d, email => doiMatKhau_(email, d.oldPassword, d.newPassword)));
-      case 'uploadAnh': return json_(chanGhi_(d, email => taiAnh_(email, d.loai, d.data)));
-      case 'myPhoto': return json_(withAuth_(d, email => anhCaNhan_(email)));
       case 'resources': return json_(withAuth_(d, () => ({ ok: true, items: taiNguyen_() })));
       case 'submitLead': return json_(chanGhi_(d, email => guiLead_(email, d.lead || {})));
       case 'myDeals': return json_(withAuth_(d, email => ({ ok: true, deals: dealCuaToi_(email), tongQuan: tongQuanChoPortal_(email) })));
@@ -319,8 +316,8 @@ function bam_(pw, salt) {
 }
 
 /* ---------- 3) Ho so ---------- */
-const PROFILE_VIEW = ['Mã partner', 'Chương trình', 'Cấp bậc', 'Họ và tên', 'Email', 'Số điện thoại', 'Tên công ty', 'Vị trí công việc', 'Khu vực',
-  'Ngày sinh', 'Địa chỉ thường trú', 'Địa chỉ tạm trú', 'Số CMND/CCCD', 'MST cá nhân', 'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản', 'Cập nhật hồ sơ'];
+// Portal chi hien thong tin co ban + chinh sach. CCCD, ngan hang... chi luu tren Sheet (admin quan ly).
+const PROFILE_VIEW = ['Mã partner', 'Chương trình', 'Cấp bậc', 'Ngày bắt đầu kỳ', 'Họ và tên', 'Email', 'Số điện thoại', 'Tên công ty', 'Vị trí công việc', 'Khu vực'];
 const PROFILE_EDIT = ['Số điện thoại', 'Ngày sinh', 'Địa chỉ thường trú', 'Địa chỉ tạm trú', 'Số CMND/CCCD', 'MST cá nhân',
   'Số tài khoản', 'Ngân hàng', 'Chủ tài khoản'];
 
@@ -383,7 +380,8 @@ function taiNguyen_() {
 
 /* ---------- 5) Dang ky lead ---------- */
 function guiLead_(email, L) {
-  const need = ['Partner ID', 'Họ và tên', 'Sản phẩm quan tâm', 'Email', 'Số điện thoại', 'Vị trí công việc', 'Tên công ty', 'Mã số thuế', 'Tỉnh/Thành phố', 'Quy mô nhân sự'];
+  const pt = timPartner_(email); if (pt) L['Partner ID'] = pt['Mã partner'];
+  const need = ['Họ và tên', 'Sản phẩm quan tâm', 'Email', 'Số điện thoại', 'Vị trí công việc', 'Tên công ty', 'Mã số thuế', 'Tỉnh/Thành phố', 'Quy mô nhân sự'];
   const mst = String(L['Mã số thuế'] || '').replace(/\s/g, '');
   if (!/^\d{10}(-?\d{3})?$/.test(mst)) return { ok: false, error: 'Mã số thuế gồm 10 hoặc 13 chữ số.' };
   for (const k of need) if (!String(L[k] || '').trim()) return { ok: false, error: 'Vui lòng điền: ' + k };
@@ -780,30 +778,64 @@ function taoLinkXemPortal_(sh, r, c) {
   o.setValue(CONFIG.PORTAL_URL + '#xem=' + token).setNote('Chỉ xem, hết hạn lúc ' + het + '. Tick lại ô Xem Portal để tạo link mới.');
 }
 
+/* ---------- Partner ID: ma truy cap Portal, kho doan (BP-XXXX-XXXX-XXXX, 31^12 to hop) ---------- */
+const MA_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // bo 0/O, 1/I/L de khong nham
+function chuanMa_(v) { let m = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (m.length === 12) m = 'BP' + m; return m; }
+function laMaMoi_(v) { return /^BP[A-Z0-9]{12}$/.test(chuanMa_(v)); }
+function taoMaPartner_() {
+  const sh = sheet_(SHEET_PARTNER), c = cot_(sh);
+  const cu = sh.getLastRow() > 1 ? sh.getRange(2, c['Mã partner'], sh.getLastRow() - 1, 1).getValues().flat().map(chuanMa_) : [];
+  for (let t = 0; t < 20; t++) {
+    const b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Utilities.getUuid() + Date.now() + t);
+    let x = ''; for (let i = 0; i < 12; i++) x += MA_CHARS[((b[i] % 256) + 256) % 256 % MA_CHARS.length];
+    const ma = 'BP-' + x.slice(0, 4) + '-' + x.slice(4, 8) + '-' + x.slice(8, 12);
+    if (cu.indexOf(chuanMa_(ma)) < 0) return ma;
+  }
+  throw new Error('Không tạo được Partner ID');
+}
+function timPartnerTheoMa_(ma) {
+  const sh = sheet_(SHEET_PARTNER); if (sh.getLastRow() < 2) return null;
+  const c = cot_(sh), v = sh.getRange(2, c['Mã partner'], sh.getLastRow() - 1, 1).getValues().flat();
+  for (let i = 0; i < v.length; i++) if (v[i] && chuanMa_(v[i]) === ma) return { row: i + 2, p: docDong_(sh, i + 2, c) };
+  return null;
+}
+// Partner nhap Partner ID de vao Portal
+function vaoBangMa_(d) {
+  const cache = CacheService.getScriptCache(), fails = Number(cache.get('ma_fail') || 0);
+  if (fails >= 60) return { ok: false, error: 'Có quá nhiều lượt nhập sai. Vui lòng thử lại sau 15 phút.' };
+  const ma = chuanMa_(d.code), f = laMaMoi_(ma) ? timPartnerTheoMa_(ma) : null;
+  if (!f || f.p['Trạng thái duyệt'] !== 'Đã duyệt' || !f.p['Email']) {
+    cache.put('ma_fail', String(fails + 1), 900); Utilities.sleep(800);
+    return { ok: false, error: 'Partner ID không đúng hoặc chưa được kích hoạt. Vui lòng kiểm tra lại.' };
+  }
+  const email = String(f.p['Email']).trim().toLowerCase();
+  const token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  cache.put('s_' + token, email, 21600);
+  const sh = sheet_(SHEET_PARTNER), c = cot_(sh);
+  if (c['Đăng nhập lần cuối']) sh.getRange(f.row, c['Đăng nhập lần cuối']).setValue(new Date());
+  return { ok: true, token: token, profile: hoSo_(email) };
+}
+function guiMaPartner_(p, ma) {
+  return guiEmail_('partnerid|' + ma, p['Email'], 'Partner ID của bạn tại Base Partner Portal',
+    `<p>Chào ${esc_(p['Họ và tên'])},</p>
+     <p>Chào mừng bạn đồng hành cùng Base.vn. Partner ID của bạn:</p>
+     <p style="font-size:22px;font-weight:800;letter-spacing:.06em;margin:14px 0">${ma}</p>
+     <p>Truy cập <a href="${CONFIG.PORTAL_URL}">Base Partner Portal</a> và nhập Partner ID để xem thông tin, chính sách, tình trạng các deal đã giới thiệu, tài nguyên và đăng ký lead mới. Không cần mật khẩu.</p>
+     <p style="color:#B45309">Partner ID là mã truy cập riêng của bạn, vui lòng không chia sẻ cho người khác.</p>
+     ${p['Ghi chú gửi partner'] ? '<p>' + esc_(p['Ghi chú gửi partner']) + '</p>' : ''}
+     <p>Cần hỗ trợ, vui lòng gọi ${CONFIG.HOTLINE}.</p>`);
+}
+
 function xuLyDuyetPartner_(sh, r, c) {
   const p = docDong_(sh, r, c);
-  if (!p['Email']) return;
   if (p['Trạng thái duyệt'] === 'Đã duyệt') {
+    if (!p['Email']) { sh.getRange(r, c['Trạng thái duyệt']).setNote('Cần điền Email trước khi duyệt (dùng để gửi thông báo deal).'); return; }
+    sh.getRange(r, c['Trạng thái duyệt']).clearNote();
+    if (!p['Thời gian']) sh.getRange(r, c['Thời gian']).setValue(new Date());
+    if (!p['Chương trình']) sh.getRange(r, c['Chương trình']).setValue('Affiliate');
     let ma = p['Mã partner'];
-    if (!ma) {
-      const props = PropertiesService.getScriptProperties();
-      const n = Number(props.getProperty('PARTNER_SEQ') || 0) + 1;
-      props.setProperty('PARTNER_SEQ', String(n));
-      ma = 'P' + String(n).padStart(4, '0');
-      sh.getRange(r, c['Mã partner']).setValue(ma);
-    }
-    if (p['Mật khẩu (mã hóa)']) return; // da co tai khoan
-    const pw = datMatKhauMoi_(sh, r, c);
-    guiEmail_('taikhoan|' + p['Email'], p['Email'], 'Chào mừng bạn trở thành Base Affiliate Partner',
-      `<p>Chào ${esc_(p['Họ và tên'])},</p>
-       <p>Hồ sơ của bạn đã được duyệt. Mã Partner: <b>${ma}</b>.</p>
-       <table style="border-collapse:collapse;margin:12px 0;font-size:15px">
-         <tr><td style="padding:6px 16px 6px 0;color:#64748B">Trang đăng nhập</td><td><a href="${CONFIG.PORTAL_URL}">${CONFIG.PORTAL_URL}</a></td></tr>
-         <tr><td style="padding:6px 16px 6px 0;color:#64748B">Email đăng nhập</td><td><b>${esc_(p['Email'])}</b></td></tr>
-         <tr><td style="padding:6px 16px 6px 0;color:#64748B">Mật khẩu tạm thời</td><td><b style="font-size:17px">${pw}</b></td></tr>
-       </table>
-       <p>Lần đăng nhập đầu tiên, hệ thống sẽ yêu cầu bạn đổi mật khẩu. Sau đó hãy bổ sung thông tin cá nhân và tài khoản nhận hoa hồng trong mục <b>Thông tin của tôi</b>.</p>
-       ${p['Ghi chú gửi partner'] ? '<p>' + esc_(p['Ghi chú gửi partner']) + '</p>' : ''}`);
+    if (!laMaMoi_(ma)) { ma = taoMaPartner_(); sh.getRange(r, c['Mã partner']).setValue(ma); }
+    guiMaPartner_(p, ma);
   } else if (p['Trạng thái duyệt'] === 'Từ chối') {
     guiEmail_('tuchoi|' + p['Email'], p['Email'], 'Kết quả đăng ký Base Affiliate Partner',
       `<p>Chào ${esc_(p['Họ và tên'])},</p>
@@ -1004,7 +1036,7 @@ function lamMoiTatCa() {
   xoaNoiDung_(SHEET_LOG); xoaNoiDung_('Webhook log'); xoaNoiDung_(SHEET_REV);
   PropertiesService.getScriptProperties().deleteProperty('PARTNER_SEQ');
   caiDinhDang_();
-  thongBao_('Đã xóa sạch dữ liệu test. Mã partner sẽ bắt đầu lại từ P0001.');
+  thongBao_('Đã xóa sạch dữ liệu test.');
 }
 function dungLaiSheet_(name, headers, giuDuLieu) {
   const ss = ss_(), sh = ss.getSheetByName(name) || ss.insertSheet(name);
@@ -1088,19 +1120,29 @@ function xemNhiemVu() {
   Logger.log(JSON.stringify(docJob_(ID)));
 }
 // 3) Cap tai khoan cho cac partner da duyet truoc khi co ban v2
-function capTaiKhoanChoPartnerCu() {
-  const sh = sheet_(SHEET_PARTNER), c = cot_(sh); let n = 0;
+// Cap Partner ID moi (BP-...) cho partner da duyet con dung ma cu (P0001...). Cap nhat ma o tab Lead va Doanh thu.
+// GUI_EMAIL = true: gui email Partner ID cho tung partner. false: chi tao ma, ban tu gui.
+function capMaMoiChoPartnerCu() {
+  const GUI_EMAIL = false;
+  const sh = sheet_(SHEET_PARTNER), c = cot_(sh), doi = {}; const ds = [];
   for (let r = 2; r <= sh.getLastRow(); r++) {
     const p = docDong_(sh, r, c);
-    if (p['Trạng thái duyệt'] !== 'Đã duyệt' || p['Mật khẩu (mã hóa)'] || !p['Email']) continue;
-    const pw = datMatKhauMoi_(sh, r, c); n++;
-    guiEmail_('taikhoan|' + p['Email'], p['Email'], 'Tài khoản Partner Portal của bạn',
-      `<p>Chào ${esc_(p['Họ và tên'])},</p><p>Base đã ra mắt Partner Portal mới. Thông tin đăng nhập của bạn:</p>
-       <p>Trang đăng nhập: <a href="${CONFIG.PORTAL_URL}">${CONFIG.PORTAL_URL}</a><br>Email: <b>${esc_(p['Email'])}</b><br>
-       Mã Partner: <b>${esc_(p['Mã partner'])}</b><br>Mật khẩu tạm thời: <b style="font-size:17px">${pw}</b></p>
-       <p>Lần đăng nhập đầu tiên, bạn sẽ được yêu cầu đổi mật khẩu.</p>`);
+    if (p['Trạng thái duyệt'] !== 'Đã duyệt' || laMaMoi_(p['Mã partner'])) continue;
+    const ma = taoMaPartner_(); sh.getRange(r, c['Mã partner']).setValue(ma);
+    if (p['Mã partner']) doi[String(p['Mã partner'])] = ma;
+    ds.push((p['Họ và tên'] || p['Email']) + ': ' + ma);
+    if (GUI_EMAIL && p['Email']) guiMaPartner_(p, ma);
   }
-  Logger.log('Đã cấp tài khoản cho ' + n + ' partner.');
+  [SHEET_LEAD, SHEET_REV].forEach(name => {
+    const t = sheet_(name); if (!t || t.getLastRow() < 2) return;
+    const col = cot_(t)['Mã partner']; if (!col) return;
+    const rg = t.getRange(2, col, t.getLastRow() - 1, 1), v = rg.getValues();
+    let n = 0; v.forEach(x => { if (doi[String(x[0])]) { x[0] = doi[String(x[0])]; n++; } });
+    if (n) rg.setValues(v);
+    const pid = cot_(t)['Partner ID (Base)'];
+    if (pid) { const r2 = t.getRange(2, pid, t.getLastRow() - 1, 1), v2 = r2.getValues(); v2.forEach(x => { if (doi[String(x[0])]) x[0] = doi[String(x[0])]; }); r2.setValues(v2); }
+  });
+  thongBao_(ds.length ? 'Đã cấp Partner ID mới cho ' + ds.length + ' partner:\n\n' + ds.join('\n') : 'Không có partner nào cần cấp mã mới.');
 }
 
 

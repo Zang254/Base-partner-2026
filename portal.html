@@ -19,6 +19,21 @@ h1,h2,h3,p{margin:0}
 a{color:var(--blue)}
 button,input,select,textarea{font:inherit}
 .hidden{display:none!important}
+.code-inp{font-size:19px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.code-inp::placeholder{font-weight:500;letter-spacing:.06em}
+.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:2px 0 16px;cursor:pointer}
+.remember input{width:17px;height:17px;accent-color:var(--blue)}
+.hint{font-size:13.5px;color:var(--muted);margin:16px 0 0;text-align:center}
+.pol{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+.pol th{background:#EEF3FB;text-align:left;font-size:12.5px;padding:9px 12px;font-weight:600}
+.pol td{padding:10px 12px;border-top:1px solid #EEF3FB}
+.pol td.n{text-align:center;font-weight:700}
+.pol tr.on td{background:#F0F6FF}
+.pol-note{font-size:13px;color:var(--muted);margin:12px 0 0}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin:12px 0 0}
+.info dt{font-size:12.5px;color:var(--muted)}
+.info dd{margin:2px 0 0;font-weight:600;word-break:break-word}
+@media(max-width:640px){.info{grid-template-columns:1fr}.pol{font-size:13px}.pol th,.pol td{padding:8px}}
 .viewbar{background:#FEF3C7;color:#92400E;border-bottom:1px solid #FCD34D;padding:10px 16px;font-size:14px;text-align:center}
 :focus-visible{outline:3px solid #7EA2FF;outline-offset:2px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 22px;border:0;border-radius:999px;background:var(--g-base);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -10px rgba(31,98,232,.7);transition:filter .2s}
@@ -228,26 +243,15 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   <div class="auth-card">
     <div class="brand"><img src="" alt="" class="logo-img">BASE.VN <span>Partner Portal</span></div>
     <div id="loginBox">
-      <h1>Đăng nhập</h1>
-      <p class="sub">Dành cho Partner đã được duyệt. Tài khoản được gửi qua email khi hồ sơ được phê duyệt.</p>
+      <h1>Truy cập Partner Portal</h1>
+      <p class="sub">Nhập Partner ID Base đã cấp cho bạn để xem thông tin, chính sách, tình trạng deal và đăng ký lead.</p>
       <div id="loginMsg"></div>
       <form id="loginForm" novalidate>
-        <div class="field"><label for="lgEmail">Email</label><input class="inp" id="lgEmail" type="email" autocomplete="username" required></div>
-        <div class="field"><label for="lgPw">Mật khẩu</label>
-          <div class="pw"><input class="inp" id="lgPw" type="password" autocomplete="current-password" required><button type="button" data-toggle="lgPw">Hiện</button></div></div>
-        <div class="auth-links"><span></span><a href="#" id="toForgot">Quên mật khẩu?</a></div>
-        <button class="btn" style="width:100%" id="lgBtn" type="submit">Đăng nhập</button>
+        <div class="field"><label for="lgCode">Partner ID</label><input class="inp code-inp" id="lgCode" placeholder="BP-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required></div>
+        <label class="remember"><input type="checkbox" id="lgRemember" checked> Ghi nhớ trên thiết bị này</label>
+        <button class="btn" style="width:100%" id="lgBtn" type="submit">Truy cập</button>
       </form>
-    </div>
-    <div id="forgotBox" class="hidden">
-      <h1>Quên mật khẩu</h1>
-      <p class="sub">Nhập email đăng ký Partner, Base sẽ gửi mật khẩu tạm thời mới qua email.</p>
-      <div id="fgMsg"></div>
-      <form id="fgForm" novalidate>
-        <div class="field"><label for="fgEmail">Email</label><input class="inp" id="fgEmail" type="email" required></div>
-        <button class="btn" style="width:100%" id="fgBtn" type="submit">Gửi mật khẩu mới</button>
-      </form>
-      <div class="auth-links" style="margin-top:16px"><a href="#" id="toLogin">← Quay lại đăng nhập</a><span></span></div>
+      <p class="hint">Chưa có hoặc quên Partner ID? Gọi hotline <a href="tel:0943860401">0943 860 401</a>.</p>
     </div>
     <p class="auth-foot">Chưa là Partner? <a href="./#bp-dang-ky">Đăng ký làm Partner</a></p>
   </div>
@@ -260,7 +264,7 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     <div class="top-in">
       <div class="top-row">
         <div class="brand"><img src="" alt="" class="logo-img">BASE.VN <span>Partner Portal</span></div>
-        <div class="who"><div class="nm"><b id="whoName"></b><small id="whoCode"></small></div><button class="btn ghost sm" id="logoutBtn">Đăng xuất</button></div>
+        <div class="who"><div class="nm"><b id="whoName"></b><small id="whoCode"></small></div><button class="btn ghost sm" id="logoutBtn">Thoát</button></div>
       </div>
       <nav class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="deals" aria-selected="true">Deal của tôi</button>
@@ -294,7 +298,6 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
           <p class="lead-in">Thông tin khách hàng bạn muốn giới thiệu. Base sẽ kiểm tra và báo kết quả trong 24–48 giờ làm việc.</p>
           <div id="leadMsg"></div>
           <form class="lf" id="leadForm" novalidate>
-            <div class="full"><label for="l0">Partner ID <span class="req">*</span></label><input class="inp" id="l0" name="Partner ID" placeholder="Nhập Partner ID của bạn" required></div>
             <div class="full"><label for="l1">Họ và tên khách hàng <span class="req">*</span></label><input class="inp" id="l1" name="Họ và tên" placeholder="Nhập tên người liên hệ" required></div>
             <div class="full"><label for="l2">Sản phẩm khách quan tâm <span class="req">*</span></label>
               <select class="inp" id="l2" name="Sản phẩm quan tâm" required><option value="">Lựa chọn sản phẩm</option><option>Base Work</option><option>Base CRM</option><option>Base HRM</option><option>AI &amp; Agents</option><option>Trọn bộ nền tảng Base</option><option>Chưa xác định</option></select></div>
@@ -332,59 +335,32 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
     <!-- THONG TIN -->
     <section class="panel hidden" id="p-me">
       <h2>Thông tin của tôi</h2>
-      <p class="lead-in">Bổ sung thông tin cá nhân và tài khoản ngân hàng để Base lập hợp đồng và chi trả hoa hồng.</p>
+      <p class="lead-in">Thông tin Partner và chính sách hoa hồng đang áp dụng cho bạn.</p>
       <div class="prof">
         <div class="idcard">
-          <label class="ava-up" data-loai="chan_dung" title="Tải ảnh cá nhân"><input type="file" accept="image/jpeg,image/png" hidden><span class="avatar" id="mAvatar"><i id="mInit"></i></span><span class="ava-txt">Tải ảnh cá nhân</span></label>
-          <small>Mã Partner</small>
-          <div class="code" id="mCode">–</div>
+          <small>Partner ID</small>
+          <div class="code" id="mCode" style="font-size:22px">–</div>
           <dl>
             <div><dt>Họ và tên</dt><dd id="mName"></dd></div>
             <div><dt>Email</dt><dd id="mEmail"></dd></div>
             <div><dt>Chương trình</dt><dd id="mProgram">Affiliate Partner</dd></div>
             <div><dt>Công ty</dt><dd id="mCompany"></dd></div>
-            <div><dt>Cập nhật hồ sơ</dt><dd id="mUpdated">Chưa cập nhật</dd></div>
           </dl>
         </div>
         <div>
           <div class="card pf">
-            <h3>Thông tin Bên liên kết (Bên B)</h3>
-            <p class="note">Dùng để lập hợp đồng liên kết và chi trả hoa hồng. Thông tin chỉ đội ngũ Phát triển Đối tác của Base xem được.</p>
-            <div id="pfMsg"></div>
-            <form id="pfForm" novalidate>
-              <div class="pf-grid">
-                <div><label for="f1">Ngày sinh</label><input class="inp" id="f1" name="Ngày sinh" type="date"></div>
-                <div><label for="f2">Số điện thoại</label><input class="inp" id="f2" name="Số điện thoại" type="tel"></div>
-                <div class="full"><label for="f3">Địa chỉ thường trú</label><input class="inp" id="f3" name="Địa chỉ thường trú"></div>
-                <div class="full"><label for="f4">Địa chỉ tạm trú</label><input class="inp" id="f4" name="Địa chỉ tạm trú"></div>
-                <div><label for="f5">Số CMND/CCCD</label><input class="inp" id="f5" name="Số CMND/CCCD" inputmode="numeric"></div>
-                <div><label for="f6">MST cá nhân</label><input class="inp" id="f6" name="MST cá nhân" inputmode="numeric"></div>
-                <div><label for="f7">Số tài khoản</label><input class="inp" id="f7" name="Số tài khoản" inputmode="numeric"></div>
-                <div><label for="f8">Ngân hàng</label><input class="inp" id="f8" name="Ngân hàng" placeholder="VD: Vietcombank - CN Hà Nội"></div>
-                <div class="full"><label for="f9">Chủ tài khoản</label><input class="inp" id="f9" name="Chủ tài khoản" placeholder="Viết hoa không dấu, VD: NGUYEN VAN A"></div>
-              </div>
-              <div class="pf-act"><button class="btn" id="pfBtn" type="submit">Lưu thông tin</button><small id="pfSaved"></small></div>
-            </form>
+            <h3>Chính sách áp dụng</h3>
+            <div id="polBox"></div>
           </div>
           <div class="card pf sec">
-            <h3>Ảnh CCCD</h3>
-            <p class="note">Ảnh CCCD dùng để xác minh danh tính, lập hợp đồng và chứng từ chi trả hoa hồng. Ảnh được lưu riêng tư, chỉ đội ngũ Phát triển Đối tác của Base xem được. Chọn ảnh JPG hoặc PNG, chụp rõ nét, đủ 4 góc.</p>
-            <div id="upMsg"></div>
-            <div class="up-grid">
-              <label class="up" data-loai="cccd_truoc"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt trước</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
-              <label class="up" data-loai="cccd_sau"><input type="file" accept="image/jpeg,image/png" hidden><b>CCCD mặt sau</b><span class="up-st">Chưa tải lên</span><span class="btn ghost sm">Chọn ảnh</span></label>
-            </div>
-          </div>
-          <div class="card pf sec">
-            <h3>Đổi mật khẩu</h3>
-            <p class="note">Mật khẩu mới cần ít nhất 8 ký tự.</p>
-            <div id="cpMsg"></div>
-            <form id="cpForm" class="pf-grid" novalidate>
-              <div class="full"><label for="c1">Mật khẩu hiện tại</label><input class="inp" id="c1" type="password" autocomplete="current-password"></div>
-              <div><label for="c2">Mật khẩu mới</label><input class="inp" id="c2" type="password" autocomplete="new-password"></div>
-              <div><label for="c3">Nhập lại mật khẩu mới</label><input class="inp" id="c3" type="password" autocomplete="new-password"></div>
-              <div class="full"><button class="btn ghost" id="cpBtn" type="submit">Đổi mật khẩu</button></div>
-            </form>
+            <h3>Thông tin liên hệ</h3>
+            <dl class="info">
+              <div><dt>Số điện thoại</dt><dd id="iPhone">–</dd></div>
+              <div><dt>Vị trí công việc</dt><dd id="iPos">–</dd></div>
+              <div><dt>Khu vực</dt><dd id="iRegion">–</dd></div>
+              <div><dt>Công ty</dt><dd id="iCompany">–</dd></div>
+            </dl>
+            <p class="pol-note">Cần cập nhật thông tin? Vui lòng liên hệ đội ngũ Partner của Base qua hotline <a href="tel:0943860401">0943 860 401</a>.</p>
           </div>
         </div>
       </div>
@@ -393,18 +369,6 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
 </div>
 
 <!-- ============ BAT BUOC DOI MAT KHAU ============ -->
-<div class="modal hidden" id="forceModal" role="dialog" aria-modal="true" aria-labelledby="fmTitle">
-  <div class="auth-card">
-    <h1 id="fmTitle">Đặt mật khẩu mới</h1>
-    <p class="sub">Đây là lần đăng nhập đầu tiên với mật khẩu tạm thời. Vui lòng đặt mật khẩu riêng của bạn (ít nhất 8 ký tự).</p>
-    <div id="fmMsg"></div>
-    <form id="fmForm" novalidate>
-      <div class="field"><label for="fm1">Mật khẩu mới</label><input class="inp" id="fm1" type="password" autocomplete="new-password"></div>
-      <div class="field"><label for="fm2">Nhập lại mật khẩu mới</label><input class="inp" id="fm2" type="password" autocomplete="new-password"></div>
-      <button class="btn" style="width:100%" id="fmBtn" type="submit">Lưu mật khẩu</button>
-    </form>
-  </div>
-</div>
 
 <script>
 (function(){
@@ -432,42 +396,41 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       .catch(function(e){ if (e && e.message && e.message.indexOf('Phiên') === 0) throw e; throw new Error('Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.'); });
   }
 
-  /* ---------- Hien/an mat khau ---------- */
-  document.querySelectorAll('[data-toggle]').forEach(function(b){
-    b.addEventListener('click', function(){ var i = $(b.dataset.toggle); var s = i.type === 'password'; i.type = s ? 'text' : 'password'; b.textContent = s ? 'Ẩn' : 'Hiện'; });
-  });
-
-  /* ---------- Dang nhap ---------- */
-  $('toForgot').onclick = function(e){ e.preventDefault(); $('loginBox').classList.add('hidden'); $('forgotBox').classList.remove('hidden'); $('fgEmail').value = $('lgEmail').value; $('fgEmail').focus(); };
-  $('toLogin').onclick = function(e){ e.preventDefault(); $('forgotBox').classList.add('hidden'); $('loginBox').classList.remove('hidden'); };
-
+  /* ---------- Nhap Partner ID ---------- */
+  function dinhDangMa(v){
+    var x = String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (x.length > 12 && x.indexOf('BP') === 0) x = x.slice(2);
+    x = x.slice(0, 12);
+    var g = x.match(/.{1,4}/g) || [];
+    return g.length ? 'BP-' + g.join('-') : '';
+  }
+  $('lgCode').addEventListener('input', function(e){ var el = e.target, p = el.selectionStart; el.value = el.value.toUpperCase(); try { el.setSelectionRange(p, p); } catch (_) {} });
+  $('lgCode').addEventListener('blur', function(e){ if (e.target.value) e.target.value = dinhDangMa(e.target.value); });
+  function vao(code, auto){
+    var btn = $('lgBtn'); busy(btn, true, 'Đang kiểm tra...');
+    return api('enter', { code: code }).then(function(r){
+      busy(btn, false);
+      if (!r.ok){ if (auto) store.del('bp_code'); return msg('loginMsg', r.error || 'Partner ID không đúng.'); }
+      state.token = r.token; store.set('bp_token', r.token);
+      if (auto || $('lgRemember').checked) store.set('bp_code', code); else store.del('bp_code');
+      $('lgCode').value = '';
+      enterApp(r.profile, false);
+    }).catch(function(err){ busy(btn, false); msg('loginMsg', err.message); });
+  }
   $('loginForm').addEventListener('submit', function(e){
     e.preventDefault(); msg('loginMsg');
-    var email = $('lgEmail').value.trim(), pw = $('lgPw').value;
-    if (!email || !pw) return msg('loginMsg', 'Vui lòng nhập email và mật khẩu.');
-    var btn = $('lgBtn'); busy(btn, true, 'Đang đăng nhập...');
-    api('login', { email: email, password: pw }).then(function(r){
-      busy(btn, false);
-      if (!r.ok) return msg('loginMsg', r.error || 'Đăng nhập không thành công.');
-      state.token = r.token; store.set('bp_token', r.token); state.tempPw = pw; $('lgPw').value = '';
-      enterApp(r.profile, r.mustChange);
-    }).catch(function(err){ busy(btn, false); msg('loginMsg', err.message); });
-  });
-
-  $('fgForm').addEventListener('submit', function(e){
-    e.preventDefault(); var email = $('fgEmail').value.trim();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return msg('fgMsg', 'Vui lòng nhập email hợp lệ.');
-    var btn = $('fgBtn'); busy(btn, true);
-    api('forgot', { email: email }).then(function(){ busy(btn, false); msg('fgMsg', 'Nếu email đã được duyệt Partner, mật khẩu mới sẽ được gửi trong ít phút. Hãy kiểm tra cả hộp thư Spam.', 'ok'); })
-      .catch(function(err){ busy(btn, false); msg('fgMsg', err.message); });
+    var code = dinhDangMa($('lgCode').value);
+    if (code.replace(/-/g,'').length !== 14) return msg('loginMsg', 'Partner ID gồm 12 ký tự sau "BP-", ví dụ BP-AB12-CD34-EF56.');
+    vao(code, false);
   });
 
   function logout(expired){
     if (state.token && !expired) api('logout').catch(function(){});
-    if (!state.viewOnly) store.del('bp_token');
+    if (!state.viewOnly){ store.del('bp_token'); if (!expired) store.del('bp_code'); }
     state.token = null; state.viewOnly = false; $('viewBar').classList.add('hidden');
-    $('v-app').classList.add('hidden'); $('forceModal').classList.add('hidden'); $('v-login').classList.remove('hidden');
-    if (expired) msg('loginMsg', 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+    $('v-app').classList.add('hidden'); $('v-login').classList.remove('hidden');
+    if (expired && !state.viewOnly && store.get('bp_code')){ vao(store.get('bp_code'), true); return; }
+    if (expired) msg('loginMsg', 'Phiên truy cập đã hết hạn, vui lòng nhập lại Partner ID.');
   }
   $('logoutBtn').onclick = function(){ logout(false); };
 
@@ -480,10 +443,9 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
       $('viewBar').classList.remove('hidden'); mustChange = false;
     }
     $('v-login').classList.add('hidden'); $('v-app').classList.remove('hidden');
-    $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = profile['Mã partner'] ? 'Mã Partner ' + profile['Mã partner'] : '';
+    $('whoName').textContent = profile['Họ và tên'] || ''; $('whoCode').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' : 'Affiliate Partner';
     fillProfile(); prefillPid();
     showTab(location.hash.replace('#','') || 'deals');
-    if (mustChange){ $('forceModal').classList.remove('hidden'); $('fm1').focus(); }
   }
 
   /* ---------- Tabs ---------- */
@@ -620,85 +582,38 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   }
 
   /* ---------- Thong tin ---------- */
-  function prefillPid(){ var el = $('l0'); if (el && !el.value) el.value = profile['Mã partner'] || ''; }
+  function prefillPid(){}
+  var AFF = [['Khách hàng mới', 15, 10], ['Khách hàng tái kích hoạt', 7, 5], ['Khách hàng đang được Base chăm sóc', 0, 0]];
+  var CAP = [['Ambassador','Dưới 100 triệu',18,2,10],['Silver','100 – 500 triệu',20,4,15],['Gold','500 triệu – 1,5 tỷ',25,6,15],['Platinum','1,5 – 3 tỷ',30,8,20],['Diamond','Từ 3 tỷ',35,10,20]];
+  function laConsulting(){ return String(profile['Chương trình']||'').toLowerCase() === 'consulting'; }
+  function renderPolicy(){
+    var h;
+    if (laConsulting()){
+      var cur = profile['Cấp bậc'] || 'Ambassador';
+      h = '<p class="note">Chương trình <b>Consulting Partner</b>. Cấp bậc xét theo doanh thu tích luỹ trong kỳ 12 tháng' + (profile['Ngày bắt đầu kỳ'] ? ' tính từ ' + esc(String(profile['Ngày bắt đầu kỳ']).slice(0,10)) : '') + '. Cấp hiện tại: <b>' + esc(cur) + '</b>.</p>' +
+        '<table class="pol"><thead><tr><th>Cấp</th><th>Tích luỹ 12 tháng</th><th>Bán mới, up/cross trong 9 tháng</th><th>Gia hạn, up/cross sau 9 tháng</th><th>Dịch vụ</th></tr></thead><tbody>' +
+        CAP.map(function(c){ return '<tr class="' + (c[0] === cur ? 'on' : '') + '"><td><b>' + c[0] + '</b></td><td>' + c[1] + '</td><td class="n">' + c[2] + '%</td><td class="n">' + c[3] + '%</td><td class="n">' + c[4] + '%</td></tr>'; }).join('') +
+        '</tbody></table><p class="pol-note">Doanh thu triển khai được tính vào tích luỹ, không tính hoa hồng. Khi lên cấp, mức mới áp dụng cho các khoản phát sinh sau đó.</p>';
+    } else {
+      h = '<p class="note">Chương trình <b>Affiliate Partner</b>. Mức hoa hồng căn cứ trạng thái khách hàng trên Base CRM tại thời điểm đăng ký lead; mức áp dụng cho từng lead hiển thị ở mục Deal của tôi.</p>' +
+        '<table class="pol"><thead><tr><th>Trạng thái khách hàng</th><th>Ký mới</th><th>Up/cross, dịch vụ trong 6 tháng</th></tr></thead><tbody>' +
+        AFF.map(function(a){ return '<tr><td>' + a[0] + '</td><td class="n">' + a[1] + '%</td><td class="n">' + a[2] + '%</td></tr>'; }).join('') +
+        '</tbody></table><p class="pol-note">Doanh thu triển khai và gia hạn không tính hoa hồng. Chi tiết hoa hồng được gửi trong Biên bản đối soát trước ngày 15 tháng sau.</p>';
+    }
+    $('polBox').innerHTML = h;
+  }
   function fillProfile(){
     $('mCode').textContent = profile['Mã partner'] || '–'; $('mName').textContent = profile['Họ và tên'] || '';
     $('mEmail').textContent = profile['Email'] || ''; $('mCompany').textContent = profile['Tên công ty'] || '–';
-    $('mUpdated').textContent = profile['Cập nhật hồ sơ'] || 'Chưa cập nhật';
-    var anh = profile.anh || {};
-    var nm = String(profile['Họ và tên']||'').trim().split(/\s+/).pop() || ''; $('mInit').textContent = nm.charAt(0).toUpperCase();
-    document.querySelector('.ava-up .ava-txt').textContent = anh.chan_dung ? 'Đổi ảnh' : 'Tải ảnh cá nhân';
-    document.querySelectorAll('.up').forEach(function(el){ var ok = !!anh[el.dataset.loai]; el.classList.toggle('done', ok); el.querySelector('.up-st').textContent = ok ? 'Đã tải lên' : 'Chưa tải lên'; el.querySelector('.btn').textContent = ok ? 'Đổi ảnh' : 'Chọn ảnh'; });
-    if (anh.chan_dung && !loaded.photo){ loaded.photo = true; api('myPhoto').then(function(r){ if (r.ok && r.data){ $('mAvatar').style.backgroundImage = 'url(' + r.data + ')'; $('mAvatar').classList.add('has'); } }).catch(function(){}); }
-    $('mProgram').textContent = String(profile['Chương trình']||'').toLowerCase() === 'consulting' ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
-    $('pfForm').querySelectorAll('.inp').forEach(function(el){
-      var v = profile[el.name] || '';
-      if (el.type === 'date' && /^\d{2}\/\d{2}\/\d{4}/.test(v)) v = v.slice(6,10) + '-' + v.slice(3,5) + '-' + v.slice(0,2);
-      el.value = v;
-    });
+    $('mProgram').textContent = laConsulting() ? 'Consulting Partner' + (profile['Cấp bậc'] ? ' · ' + profile['Cấp bậc'] : '') : 'Affiliate Partner';
+    $('iPhone').textContent = profile['Số điện thoại'] || '–'; $('iPos').textContent = profile['Vị trí công việc'] || '–';
+    $('iRegion').textContent = profile['Khu vực'] || '–'; $('iCompany').textContent = profile['Tên công ty'] || '–';
+    renderPolicy();
   }
-  /* ---------- Tai anh ---------- */
-  function nenAnh(file, maxPx){
-    return new Promise(function(ok, fail){
-      if (!/^image\/(jpeg|png)$/.test(file.type)) return fail(new Error('Vui lòng chọn ảnh JPG hoặc PNG.'));
-      if (file.size > 15 * 1024 * 1024) return fail(new Error('Ảnh quá lớn, vui lòng chọn ảnh dưới 15MB.'));
-      var img = new Image(), url = URL.createObjectURL(file);
-      img.onload = function(){
-        var k = Math.min(1, maxPx / Math.max(img.width, img.height)), cv = document.createElement('canvas');
-        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
-        var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
-        URL.revokeObjectURL(url); ok(cv.toDataURL('image/jpeg', 0.85));
-      };
-      img.onerror = function(){ URL.revokeObjectURL(url); fail(new Error('Không đọc được ảnh này, vui lòng chọn ảnh khác.')); };
-      img.src = url;
-    });
-  }
-  document.querySelectorAll('.up input, .ava-up input').forEach(function(inp){
-    inp.addEventListener('change', function(){
-      var box = inp.closest('[data-loai]'), loai = box.dataset.loai, f = inp.files && inp.files[0]; inp.value = '';
-      if (!f) return; msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg');
-      var st = box.querySelector('.up-st, .ava-txt'); st.textContent = 'Đang tải lên...';
-      nenAnh(f, loai === 'chan_dung' ? 800 : 1600).then(function(data){
-        return api('uploadAnh', { loai: loai, data: data }).then(function(r){
-          if (!r.ok) throw new Error(r.error || 'Tải ảnh không thành công.');
-          profile = r.profile || profile;
-          if (loai === 'chan_dung'){ $('mAvatar').style.backgroundImage = 'url(' + data + ')'; $('mAvatar').classList.add('has'); loaded.photo = true; }
-          fillProfile(); msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg', loai === 'chan_dung' ? 'Đã cập nhật ảnh cá nhân.' : 'Đã tải ảnh lên.', 'ok');
-        });
-      }).catch(function(err){ fillProfile(); msg(loai === 'chan_dung' ? 'pfMsg' : 'upMsg', err.message); });
-    });
-  });
-
-  $('pfForm').addEventListener('submit', function(e){
-    e.preventDefault(); msg('pfMsg'); var data = {};
-    $('pfForm').querySelectorAll('.inp').forEach(function(el){ data[el.name] = el.value.trim(); });
-    var btn = $('pfBtn'); busy(btn, true, 'Đang lưu...');
-    api('saveProfile', { profile: data }).then(function(r){
-      busy(btn, false);
-      if (!r.ok) return msg('pfMsg', r.error);
-      profile = r.profile || profile; fillProfile(); $('pfSaved').textContent = 'Đã lưu lúc ' + new Date().toLocaleTimeString('vi-VN');
-    }).catch(function(err){ busy(btn, false); msg('pfMsg', err.message); });
-  });
-
-  function changePw(oldPw, p1, p2, msgId, btn, done){
-    if (p1.length < 8) return msg(msgId, 'Mật khẩu mới cần ít nhất 8 ký tự.');
-    if (p1 !== p2) return msg(msgId, 'Hai mật khẩu mới chưa khớp nhau.');
-    busy(btn, true, 'Đang lưu...');
-    api('changePassword', { oldPassword: oldPw, newPassword: p1 }).then(function(r){
-      busy(btn, false); if (!r.ok) return msg(msgId, r.error); done();
-    }).catch(function(err){ busy(btn, false); msg(msgId, err.message); });
-  }
-  $('cpForm').addEventListener('submit', function(e){
-    e.preventDefault(); msg('cpMsg');
-    changePw($('c1').value, $('c2').value, $('c3').value, 'cpMsg', $('cpBtn'), function(){ $('cpForm').reset(); msg('cpMsg', 'Đã đổi mật khẩu.', 'ok'); });
-  });
-  $('fmForm').addEventListener('submit', function(e){
-    e.preventDefault(); msg('fmMsg');
-    changePw(state.tempPw, $('fm1').value, $('fm2').value, 'fmMsg', $('fmBtn'), function(){ state.tempPw = ''; $('forceModal').classList.add('hidden'); });
-  });
 
   /* ---------- Khoi dong ---------- */
-  if (state.token){
+  if (!state.token && store.get('bp_code')){ vao(store.get('bp_code'), true); }
+  else if (state.token){
     api('me').then(function(r){ if (r.ok){ if (r.viewOnly) state.viewOnly = true; enterApp(r.profile, false); } else logout(true); }).catch(function(){ logout(true); });
   }
 })();

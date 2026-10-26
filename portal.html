@@ -407,15 +407,16 @@ tr.detail td{background:#F7FAFF;padding:18px 16px}
   $('lgCode').addEventListener('input', function(e){ var el = e.target, p = el.selectionStart; el.value = el.value.toUpperCase(); try { el.setSelectionRange(p, p); } catch (_) {} });
   $('lgCode').addEventListener('blur', function(e){ if (e.target.value) e.target.value = dinhDangMa(e.target.value); });
   function vao(code, auto){
+    if (state.entering) return; state.entering = true;
     var btn = $('lgBtn'); busy(btn, true, 'Đang kiểm tra...');
     return api('enter', { code: code }).then(function(r){
-      busy(btn, false);
+      busy(btn, false); state.entering = false;
       if (!r.ok){ if (auto) store.del('bp_code'); return msg('loginMsg', r.error || 'Partner ID không đúng.'); }
       state.token = r.token; store.set('bp_token', r.token);
       if (auto || $('lgRemember').checked) store.set('bp_code', code); else store.del('bp_code');
       $('lgCode').value = '';
       enterApp(r.profile, false);
-    }).catch(function(err){ busy(btn, false); msg('loginMsg', err.message); });
+    }).catch(function(err){ busy(btn, false); state.entering = false; msg('loginMsg', err.message); });
   }
   $('loginForm').addEventListener('submit', function(e){
     e.preventDefault(); msg('loginMsg');

@@ -20,11 +20,11 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-26-mapartner'
+const CODE_VERSION = '2026-10-27-sheetmoi'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
-  SHEET_ID: '1FPlEpYFzMtNgnQDL_syYtemXAszgdsEJzEP1szs9adM',
+  SHEET_ID: '1OQuDpH9guIKvL_MRwx9_Tg0BwcELBsLzY5c812PBWok',
   ADMIN_EMAILS: 'giang.hoang03@base.vn',
   SITE_URL: 'https://zang254.github.io/Base-partner-2026/',
   PORTAL_URL: 'https://zang254.github.io/Base-partner-2026/portal.html',

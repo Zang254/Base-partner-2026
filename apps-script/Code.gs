@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-27-wfjson'
+const CODE_VERSION = '2026-10-27-wfaff'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -61,6 +61,13 @@ const CONFIG = {
   // Truong tuy chinh dien khi tao nhiem vu: { 'ten truong tren Workflow': 'cot trong tab Lead' hoac '=gia tri co dinh' }
   // Ma truong tren Base Workflow (Cai dat > Truong dau vao): [ten hien thi, nguon du lieu]
   WF_CREATE_FIELDS: {
+    // Workflow moi (workflows.base.vn) - 5 truong bat buoc
+    'aff_ten_partner':        ['Tên partner', '#PARTNER'],
+    'aff_cong_ty':            ['Công ty được giới thiệu', 'Công ty khách hàng'],
+    'aff_dia_chi':            ['Địa chỉ trụ sở (mới)', 'Tỉnh/Thành phố'],
+    'aff_email':              ['Email công ty (mới)', 'Email khách hàng'],
+    'aff_pic':                ['Người liên hệ (PIC) (mới)', '#PIC'],
+    // Ma truong cu - giu lai, Workflow moi bo qua neu khong co
     'custom_partner_id':      ['Partner ID', 'Partner ID (Base)'],
     'ten_cong_ty_khach_hang': ['Công ty đề xuất', 'Công ty khách hàng'],
     'dia_chi_tru_so':         ['Địa chỉ trụ sở', 'Tỉnh/Thành phố'],
@@ -630,6 +637,7 @@ function apDungJob_(sh, r, c0, job) {
 
 function giaTriO_(src, row) {
   if (src.charAt(0) === '=') return src.slice(1);
+  if (src === '#PARTNER') return [row['Tên partner'], row['Mã partner'] ? '(' + row['Mã partner'] + ')' : ''].filter(String).join(' ');
   if (src === '#PIC') return [row['Người liên hệ'], row['Chức vụ']].filter(String).join(' - ');
   if (src === '#NOTE') return `Mã lead: ${row['Mã lead']} | Sản phẩm quan tâm: ${row['Sản phẩm quan tâm'] || ''} | Quy mô: ${row['Quy mô KH'] || ''}` +
     (row['Nhu cầu / ghi chú'] ? ` | Ghi chú: ${row['Nhu cầu / ghi chú']}` : '') + ` | Partner: ${row['Tên partner']} (${row['Email partner']})`;

@@ -20,7 +20,7 @@
  *   WF_WEBHOOK_CREATE: 'Diem cuoi Webhook' (tao nhiem vu) cua workflow - thay cho token
  **********************************************************************/
 
-const CODE_VERSION = '2026-10-27-sheetmoi'
+const CODE_VERSION = '2026-10-27-wfjson'
 
 const CONFIG = {
   // File Google Sheet luu du lieu Partner/Lead (lay ID trong link: /spreadsheets/d/<ID>/edit)
@@ -654,10 +654,16 @@ function taoJobQuaWebhook_(hook, row) {
   const boQua = [];
   for (let lan = 0; lan < 10; lan++) {
     const payload = Object.assign({ name: name, content: content, description: content }, values);
-    const res = UrlFetchApp.fetch(hook, { method: 'post', payload: payload, muteHttpExceptions: true });
-    const txt = res.getContentText();
+    // Workflow moi (workflows.base.vn/webhook/incoming/.../job.create) nhan JSON; ban cu nhan form. Thu JSON truoc, loi thi thu form.
+    let res = UrlFetchApp.fetch(hook, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true });
+    if (res.getResponseCode() >= 400 && res.getResponseCode() !== 422) {
+      const res2 = UrlFetchApp.fetch(hook, { method: 'post', payload: payload, muteHttpExceptions: true });
+      if (res2.getResponseCode() < 400) res = res2;
+    }
+    const http = res.getResponseCode(), txt = res.getContentText();
     let j = null; try { j = JSON.parse(txt); } catch (e) {}
-    const loi = j && j.code === 0 ? String(j.message || '') : '';
+    let loi = j && (j.code === 0 || j.ok === false || j.success === false || j.error) ? String(j.message || j.error || 'Base từ chối') : '';
+    if (!loi && http >= 400) loi = 'HTTP ' + http;
     const m = loi.match(/custom field\):\s*(.+?)\s*\(/i);
     const code = m && labels[m[1].trim().toLowerCase()];
     if (code && values[code] !== undefined) { boQua.push(m[1] + ' = ' + values[code]); delete values[code]; continue; }
@@ -665,7 +671,7 @@ function taoJobQuaWebhook_(hook, row) {
       ' | Đã gửi: ' + Object.keys(values).map(k => k + '=' + String(values[k]).slice(0, 60)).join('; ') +
       (boQua.length ? ' | Base từ chối giá trị: ' + boQua.join('; ') : ''));
     if (loi) return '';
-    const id = j && (j.id || (j.job && j.job.id) || (j.data && (j.data.id || (j.data.job && j.data.job.id))));
+    const id = j && (j.id || j.job_id || (j.job && j.job.id) || (j.data && (j.data.id || j.data.job_id || (j.data.job && j.data.job.id))));
     return id ? String(id) : 'webhook';
   }
   return '';
